@@ -1,0 +1,446 @@
+[
+  {
+    "id": "at_full",
+    "names": {
+      "en": "Austria",
+      "de": "Österreich",
+      "fr": "Autriche",
+      "it": "Austria"
+    },
+    "fileName": "at_full.ghz",
+    "fileSizeMb": 119.4
+  }
+,
+  {
+    "id": "au_full",
+    "names": {
+      "en": "Australia",
+      "de": "Australien",
+      "fr": "Australie",
+      "it": "Australia"
+    },
+    "fileName": "au_full.ghz",
+    "fileSizeMb": 184.5
+  }
+,
+  {
+    "id": "be_full",
+    "names": {
+      "en": "Belgium",
+      "de": "Belgien",
+      "fr": "Belgique",
+      "it": "Belgio"
+    },
+    "fileName": "be_full.ghz",
+    "fileSizeMb": 49.2
+  }
+,
+  {
+    "id": "bg_full",
+    "names": {
+      "en": "Bulgaria",
+      "de": "Bulgarien",
+      "fr": "Bulgarie",
+      "it": "Bulgaria"
+    },
+    "fileName": "bg_full.ghz",
+    "fileSizeMb": 44.2
+  }
+,
+  {
+    "id": "ca_alberta",
+    "names": {
+      "en": "Canada (Alberta)",
+      "de": "Kanada (Alberta)",
+      "fr": "Canada (Alberta)",
+      "it": "Canada (Alberta)"
+    },
+    "fileName": "ca_alberta.ghz",
+    "fileSizeMb": 33.8
+  }
+,
+  {
+    "id": "ca_bc",
+    "names": {
+      "en": "Canada (BC)",
+      "de": "Kanada (BC)",
+      "fr": "Canada (C.-B.)",
+      "it": "Canada (BC)"
+    },
+    "fileName": "ca_bc.ghz",
+    "fileSizeMb": 43.8
+  }
+,
+  {
+    "id": "ca_ontario",
+    "names": {
+      "en": "Canada (Ontario)",
+      "de": "Kanada (Ontario)",
+      "fr": "Canada (Ontario)",
+      "it": "Canada (Ontario)"
+    },
+    "fileName": "ca_ontario.ghz",
+    "fileSizeMb": 63.0
+  }
+,
+  {
+    "id": "ca_quebec",
+    "names": {
+      "en": "Canada (Quebec)",
+      "de": "Kanada (Quebec)",
+      "fr": "Canada (Québec)",
+      "it": "Canada (Quebec)"
+    },
+    "fileName": "ca_quebec.ghz",
+    "fileSizeMb": 46.7
+  }
+,
+  {
+    "id": "ch_full",
+    "names": {
+      "en": "Switzerland",
+      "de": "Schweiz",
+      "fr": "Suisse",
+      "it": "Svizzera"
+    },
+    "fileName": "ch_full.ghz",
+    "fileSizeMb": 71.6
+  }
+,
+  {
+    "id": "co_full",
+    "names": {
+      "en": "Colombia",
+      "de": "Kolumbien",
+      "fr": "Colombie",
+      "it": "Colombia"
+    },
+    "fileName": "co_full.ghz",
+    "fileSizeMb": 96.5
+  }
+,
+  {
+    "id": "cz_full",
+    "names": {
+      "en": "Czech Republic",
+      "de": "Tschechien",
+      "fr": "République tchèque",
+      "it": "Repubblica Ceca"
+    },
+    "fileName": "cz_full.ghz",
+    "fileSizeMb": 75.6
+  }
+,
+  {
+    "id": "de_full",
+    "names": {
+      "en": "Germany",
+      "de": "Deutschland",
+      "fr": "Allemagne",
+      "it": "Germania"
+    },
+    "fileName": "de_full.ghz",
+    "fileSizeMb": 558.0
+  }
+,
+  {
+    "id": "dk_full",
+    "names": {
+      "en": "Denmark",
+      "de": "Dänemark",
+      "fr": "Danemark",
+      "it": "Danimarca"
+    },
+    "fileName": "dk_full.ghz",
+    "fileSizeMb": 58.1
+  }
+,
+  {
+    "id": "do_full",
+    "names": {
+      "en": "Dominican Republic",
+      "de": "Dominikanische Republik",
+      "fr": "République dominicaine",
+      "it": "Repubblica Dominicana"
+    },
+    "fileName": "do_full.ghz",
+    "fileSizeMb": 26.2
+  }
+,
+  {
+    "id": "es_full",
+    "names": {
+      "en": "Spain",
+      "de": "Spanien",
+      "fr": "Espagne",
+      "it": "Spagna"
+    },
+    "fileName": "es_full.ghz",
+    "fileSizeMb": 365.9
+  }
+,
+  {
+    "id": "fr_full",
+    "names": {
+      "en": "France",
+      "de": "Frankreich",
+      "fr": "France",
+      "it": "Francia"
+    },
+    "fileName": "fr_full.ghz",
+    "fileSizeMb": 644.7
+  }
+,
+  {
+    "id": "gr_full",
+    "names": {
+      "en": "Greece",
+      "de": "Griechenland",
+      "fr": "Grèce",
+      "it": "Grecia"
+    },
+    "fileName": "gr_full.ghz",
+    "fileSizeMb": 127.7
+  }
+,
+  {
+    "id": "hr_full",
+    "names": {
+      "en": "Croatia",
+      "de": "Kroatien",
+      "fr": "Croatie",
+      "it": "Croazia"
+    },
+    "fileName": "hr_full.ghz",
+    "fileSizeMb": 35.4
+  }
+,
+  {
+    "id": "hu_full",
+    "names": {
+      "en": "Hungary",
+      "de": "Ungarn",
+      "fr": "Hongrie",
+      "it": "Ungheria"
+    },
+    "fileName": "hu_full.ghz",
+    "fileSizeMb": 53.6
+  }
+,
+  {
+    "id": "id_full",
+    "names": {
+      "en": "Indonesia",
+      "de": "Indonesien",
+      "fr": "Indonésie",
+      "it": "Indonesia"
+    },
+    "fileName": "id_full.ghz",
+    "fileSizeMb": 418.2
+  }
+,
+  {
+    "id": "it_full",
+    "names": {
+      "en": "Italy",
+      "de": "Italien",
+      "fr": "Italie",
+      "it": "Italia"
+    },
+    "fileName": "it_full.ghz",
+    "fileSizeMb": 362.5
+  }
+,
+  {
+    "id": "nl_full",
+    "names": {
+      "en": "Netherlands",
+      "de": "Niederlande",
+      "fr": "Pays-Bas",
+      "it": "Paesi Bassi"
+    },
+    "fileName": "nl_full.ghz",
+    "fileSizeMb": 69.6
+  }
+,
+  {
+    "id": "no_full",
+    "names": {
+      "en": "Norway",
+      "de": "Norwegen",
+      "fr": "Norvège",
+      "it": "Norvegia"
+    },
+    "fileName": "no_full.ghz",
+    "fileSizeMb": 105.7
+  }
+,
+  {
+    "id": "pl_full",
+    "names": {
+      "en": "Poland",
+      "de": "Polen",
+      "fr": "Pologne",
+      "it": "Polonia"
+    },
+    "fileName": "pl_full.ghz",
+    "fileSizeMb": 240.0
+  }
+,
+  {
+    "id": "pt_full",
+    "names": {
+      "en": "Portugal",
+      "de": "Portugal",
+      "fr": "Portugal",
+      "it": "Portogallo"
+    },
+    "fileName": "pt_full.ghz",
+    "fileSizeMb": 111.7
+  }
+,
+  {
+    "id": "ro_full",
+    "names": {
+      "en": "Romania",
+      "de": "Rumänien",
+      "fr": "Roumanie",
+      "it": "Romania"
+    },
+    "fileName": "ro_full.ghz",
+    "fileSizeMb": 79.1
+  }
+,
+  {
+    "id": "rs_full",
+    "names": {
+      "en": "Serbia",
+      "de": "Serbien",
+      "fr": "Serbie",
+      "it": "Serbia"
+    },
+    "fileName": "rs_full.ghz",
+    "fileSizeMb": 47.1
+  }
+,
+  {
+    "id": "se_full",
+    "names": {
+      "en": "Sweden",
+      "de": "Schweden",
+      "fr": "Suède",
+      "it": "Svezia"
+    },
+    "fileName": "se_full.ghz",
+    "fileSizeMb": 149.6
+  }
+,
+  {
+    "id": "si_full",
+    "names": {
+      "en": "Slovenia",
+      "de": "Slowenien",
+      "fr": "Slovénie",
+      "it": "Slovenia"
+    },
+    "fileName": "si_full.ghz",
+    "fileSizeMb": 28.5
+  }
+,
+  {
+    "id": "sk_full",
+    "names": {
+      "en": "Slovakia",
+      "de": "Slowakei",
+      "fr": "Slovaquie",
+      "it": "Slovacchia"
+    },
+    "fileName": "sk_full.ghz",
+    "fileSizeMb": 34.7
+  }
+,
+  {
+    "id": "uk_full",
+    "names": {
+      "en": "United Kingdom",
+      "de": "Vereinigtes Königreich",
+      "fr": "Royaume-Uni",
+      "it": "Regno Unito"
+    },
+    "fileName": "uk_full.ghz",
+    "fileSizeMb": 303.1
+  }
+,
+  {
+    "id": "us_midwest",
+    "names": {
+      "en": "USA (Midwest)",
+      "de": "USA (Mittlerer Westen)",
+      "fr": "USA (Midwest)",
+      "it": "USA (Midwest)"
+    },
+    "fileName": "us_midwest.ghz",
+    "fileSizeMb": 595.0
+  }
+,
+  {
+    "id": "us_northeast",
+    "names": {
+      "en": "USA (Northeast)",
+      "de": "USA (Nordosten)",
+      "fr": "USA (Nord-Est)",
+      "it": "USA (Nord-Est)"
+    },
+    "fileName": "us_northeast.ghz",
+    "fileSizeMb": 320.3
+  }
+,
+  {
+    "id": "us_pacific",
+    "names": {
+      "en": "USA (Pacific)",
+      "de": "USA (Pazifik)",
+      "fr": "USA (Pacifique)",
+      "it": "USA (Pacifico)"
+    },
+    "fileName": "us_pacific.ghz",
+    "fileSizeMb": 15.0
+  }
+,
+  {
+    "id": "us_south",
+    "names": {
+      "en": "USA (South)",
+      "de": "USA (Süden)",
+      "fr": "USA (Sud)",
+      "it": "USA (Sud)"
+    },
+    "fileName": "us_south.ghz",
+    "fileSizeMb": 1043.9
+  }
+,
+  {
+    "id": "us_west",
+    "names": {
+      "en": "USA (West)",
+      "de": "USA (Westen)",
+      "fr": "USA (Ouest)",
+      "it": "USA (Ovest)"
+    },
+    "fileName": "us_west.ghz",
+    "fileSizeMb": 649.1
+  }
+,
+  {
+    "id": "za_full",
+    "names": {
+      "en": "South Africa",
+      "de": "Südafrika",
+      "fr": "Afrique du Sud",
+      "it": "Sudafrica"
+    },
+    "fileName": "za_full.ghz",
+    "fileSizeMb": 163.0
+  }
+
+]
