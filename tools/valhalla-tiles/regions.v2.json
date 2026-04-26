@@ -1,0 +1,409 @@
+[
+  {
+    "id": "at_full",
+    "geofabrikPath": "europe/austria",
+    "fileName": "at_full.vtiles.zip",
+    "names": {
+      "en": "Austria",
+      "de": "Österreich",
+      "fr": "Autriche",
+      "it": "Austria"
+    }
+  },
+  {
+    "id": "au_full",
+    "geofabrikPath": "australia-oceania/australia",
+    "fileName": "au_full.vtiles.zip",
+    "names": {
+      "en": "Australia",
+      "de": "Australien",
+      "fr": "Australie",
+      "it": "Australia"
+    }
+  },
+  {
+    "id": "be_full",
+    "geofabrikPath": "europe/belgium",
+    "fileName": "be_full.vtiles.zip",
+    "names": {
+      "en": "Belgium",
+      "de": "Belgien",
+      "fr": "Belgique",
+      "it": "Belgio"
+    }
+  },
+  {
+    "id": "bg_full",
+    "geofabrikPath": "europe/bulgaria",
+    "fileName": "bg_full.vtiles.zip",
+    "names": {
+      "en": "Bulgaria",
+      "de": "Bulgarien",
+      "fr": "Bulgarie",
+      "it": "Bulgaria"
+    }
+  },
+  {
+    "id": "ca_alberta",
+    "geofabrikPath": "north-america/canada/alberta",
+    "fileName": "ca_alberta.vtiles.zip",
+    "names": {
+      "en": "Canada (Alberta)",
+      "de": "Kanada (Alberta)",
+      "fr": "Canada (Alberta)",
+      "it": "Canada (Alberta)"
+    }
+  },
+  {
+    "id": "ca_bc",
+    "geofabrikPath": "north-america/canada/british-columbia",
+    "fileName": "ca_bc.vtiles.zip",
+    "names": {
+      "en": "Canada (BC)",
+      "de": "Kanada (BC)",
+      "fr": "Canada (C.-B.)",
+      "it": "Canada (BC)"
+    }
+  },
+  {
+    "id": "ca_ontario",
+    "geofabrikPath": "north-america/canada/ontario",
+    "fileName": "ca_ontario.vtiles.zip",
+    "names": {
+      "en": "Canada (Ontario)",
+      "de": "Kanada (Ontario)",
+      "fr": "Canada (Ontario)",
+      "it": "Canada (Ontario)"
+    }
+  },
+  {
+    "id": "ca_quebec",
+    "geofabrikPath": "north-america/canada/quebec",
+    "fileName": "ca_quebec.vtiles.zip",
+    "names": {
+      "en": "Canada (Quebec)",
+      "de": "Kanada (Quebec)",
+      "fr": "Canada (Québec)",
+      "it": "Canada (Quebec)"
+    }
+  },
+  {
+    "id": "ch_full",
+    "geofabrikPath": "europe/switzerland",
+    "fileName": "ch_full.vtiles.zip",
+    "names": {
+      "en": "Switzerland",
+      "de": "Schweiz",
+      "fr": "Suisse",
+      "it": "Svizzera"
+    }
+  },
+  {
+    "id": "co_full",
+    "geofabrikPath": "south-america/colombia",
+    "fileName": "co_full.vtiles.zip",
+    "names": {
+      "en": "Colombia",
+      "de": "Kolumbien",
+      "fr": "Colombie",
+      "it": "Colombia"
+    }
+  },
+  {
+    "id": "cz_full",
+    "geofabrikPath": "europe/czech-republic",
+    "fileName": "cz_full.vtiles.zip",
+    "names": {
+      "en": "Czech Republic",
+      "de": "Tschechien",
+      "fr": "République tchèque",
+      "it": "Repubblica Ceca"
+    }
+  },
+  {
+    "id": "de_full",
+    "geofabrikPath": "europe/germany",
+    "fileName": "de_full.vtiles.zip",
+    "names": {
+      "en": "Germany",
+      "de": "Deutschland",
+      "fr": "Allemagne",
+      "it": "Germania"
+    }
+  },
+  {
+    "id": "dk_full",
+    "geofabrikPath": "europe/denmark",
+    "fileName": "dk_full.vtiles.zip",
+    "names": {
+      "en": "Denmark",
+      "de": "Dänemark",
+      "fr": "Danemark",
+      "it": "Danimarca"
+    }
+  },
+  {
+    "id": "do_full",
+    "geofabrikPath": "central-america/haiti-and-domrep",
+    "fileName": "do_full.vtiles.zip",
+    "names": {
+      "en": "Dominican Republic",
+      "de": "Dominikanische Republik",
+      "fr": "République dominicaine",
+      "it": "Repubblica Dominicana"
+    }
+  },
+  {
+    "id": "es_full",
+    "geofabrikPath": "europe/spain",
+    "fileName": "es_full.vtiles.zip",
+    "names": {
+      "en": "Spain",
+      "de": "Spanien",
+      "fr": "Espagne",
+      "it": "Spagna"
+    }
+  },
+  {
+    "id": "fr_full",
+    "geofabrikPath": "europe/france",
+    "fileName": "fr_full.vtiles.zip",
+    "names": {
+      "en": "France",
+      "de": "Frankreich",
+      "fr": "France",
+      "it": "Francia"
+    }
+  },
+  {
+    "id": "gr_full",
+    "geofabrikPath": "europe/greece",
+    "fileName": "gr_full.vtiles.zip",
+    "names": {
+      "en": "Greece",
+      "de": "Griechenland",
+      "fr": "Grèce",
+      "it": "Grecia"
+    }
+  },
+  {
+    "id": "hr_full",
+    "geofabrikPath": "europe/croatia",
+    "fileName": "hr_full.vtiles.zip",
+    "names": {
+      "en": "Croatia",
+      "de": "Kroatien",
+      "fr": "Croatie",
+      "it": "Croazia"
+    }
+  },
+  {
+    "id": "hu_full",
+    "geofabrikPath": "europe/hungary",
+    "fileName": "hu_full.vtiles.zip",
+    "names": {
+      "en": "Hungary",
+      "de": "Ungarn",
+      "fr": "Hongrie",
+      "it": "Ungheria"
+    }
+  },
+  {
+    "id": "id_full",
+    "geofabrikPath": "asia/indonesia",
+    "fileName": "id_full.vtiles.zip",
+    "names": {
+      "en": "Indonesia",
+      "de": "Indonesien",
+      "fr": "Indonésie",
+      "it": "Indonesia"
+    }
+  },
+  {
+    "id": "it_full",
+    "geofabrikPath": "europe/italy",
+    "fileName": "it_full.vtiles.zip",
+    "names": {
+      "en": "Italy",
+      "de": "Italien",
+      "fr": "Italie",
+      "it": "Italia"
+    }
+  },
+  {
+    "id": "nl_full",
+    "geofabrikPath": "europe/netherlands",
+    "fileName": "nl_full.vtiles.zip",
+    "names": {
+      "en": "Netherlands",
+      "de": "Niederlande",
+      "fr": "Pays-Bas",
+      "it": "Paesi Bassi"
+    }
+  },
+  {
+    "id": "no_full",
+    "geofabrikPath": "europe/norway",
+    "fileName": "no_full.vtiles.zip",
+    "names": {
+      "en": "Norway",
+      "de": "Norwegen",
+      "fr": "Norvège",
+      "it": "Norvegia"
+    }
+  },
+  {
+    "id": "pl_full",
+    "geofabrikPath": "europe/poland",
+    "fileName": "pl_full.vtiles.zip",
+    "names": {
+      "en": "Poland",
+      "de": "Polen",
+      "fr": "Pologne",
+      "it": "Polonia"
+    }
+  },
+  {
+    "id": "pt_full",
+    "geofabrikPath": "europe/portugal",
+    "fileName": "pt_full.vtiles.zip",
+    "names": {
+      "en": "Portugal",
+      "de": "Portugal",
+      "fr": "Portugal",
+      "it": "Portogallo"
+    }
+  },
+  {
+    "id": "ro_full",
+    "geofabrikPath": "europe/romania",
+    "fileName": "ro_full.vtiles.zip",
+    "names": {
+      "en": "Romania",
+      "de": "Rumänien",
+      "fr": "Roumanie",
+      "it": "Romania"
+    }
+  },
+  {
+    "id": "rs_full",
+    "geofabrikPath": "europe/serbia",
+    "fileName": "rs_full.vtiles.zip",
+    "names": {
+      "en": "Serbia",
+      "de": "Serbien",
+      "fr": "Serbie",
+      "it": "Serbia"
+    }
+  },
+  {
+    "id": "se_full",
+    "geofabrikPath": "europe/sweden",
+    "fileName": "se_full.vtiles.zip",
+    "names": {
+      "en": "Sweden",
+      "de": "Schweden",
+      "fr": "Suède",
+      "it": "Svezia"
+    }
+  },
+  {
+    "id": "si_full",
+    "geofabrikPath": "europe/slovenia",
+    "fileName": "si_full.vtiles.zip",
+    "names": {
+      "en": "Slovenia",
+      "de": "Slowenien",
+      "fr": "Slovénie",
+      "it": "Slovenia"
+    }
+  },
+  {
+    "id": "sk_full",
+    "geofabrikPath": "europe/slovakia",
+    "fileName": "sk_full.vtiles.zip",
+    "names": {
+      "en": "Slovakia",
+      "de": "Slowakei",
+      "fr": "Slovaquie",
+      "it": "Slovacchia"
+    }
+  },
+  {
+    "id": "uk_full",
+    "geofabrikPath": "europe/great-britain",
+    "fileName": "uk_full.vtiles.zip",
+    "names": {
+      "en": "United Kingdom",
+      "de": "Vereinigtes Königreich",
+      "fr": "Royaume-Uni",
+      "it": "Regno Unito"
+    }
+  },
+  {
+    "id": "us_midwest",
+    "geofabrikPath": "north-america/us-midwest",
+    "fileName": "us_midwest.vtiles.zip",
+    "names": {
+      "en": "USA (Midwest)",
+      "de": "USA (Mittlerer Westen)",
+      "fr": "USA (Midwest)",
+      "it": "USA (Midwest)"
+    }
+  },
+  {
+    "id": "us_northeast",
+    "geofabrikPath": "north-america/us-northeast",
+    "fileName": "us_northeast.vtiles.zip",
+    "names": {
+      "en": "USA (Northeast)",
+      "de": "USA (Nordosten)",
+      "fr": "USA (Nord-Est)",
+      "it": "USA (Nord-Est)"
+    }
+  },
+  {
+    "id": "us_pacific",
+    "geofabrikPath": "north-america/us-pacific",
+    "fileName": "us_pacific.vtiles.zip",
+    "names": {
+      "en": "USA (Pacific)",
+      "de": "USA (Pazifik)",
+      "fr": "USA (Pacifique)",
+      "it": "USA (Pacifico)"
+    }
+  },
+  {
+    "id": "us_south",
+    "geofabrikPath": "north-america/us-south",
+    "fileName": "us_south.vtiles.zip",
+    "names": {
+      "en": "USA (South)",
+      "de": "USA (Süden)",
+      "fr": "USA (Sud)",
+      "it": "USA (Sud)"
+    }
+  },
+  {
+    "id": "us_west",
+    "geofabrikPath": "north-america/us-west",
+    "fileName": "us_west.vtiles.zip",
+    "names": {
+      "en": "USA (West)",
+      "de": "USA (Westen)",
+      "fr": "USA (Ouest)",
+      "it": "USA (Ovest)"
+    }
+  },
+  {
+    "id": "za_full",
+    "geofabrikPath": "africa/south-africa",
+    "fileName": "za_full.vtiles.zip",
+    "names": {
+      "en": "South Africa",
+      "de": "Südafrika",
+      "fr": "Afrique du Sud",
+      "it": "Sudafrica"
+    }
+  }
+]
