@@ -432,6 +432,18 @@
   }
 ,
   {
+    "id": "mg_full",
+    "names": {
+      "en": "Madagascar",
+      "de": "Madagaskar",
+      "fr": "Madagascar",
+      "it": "Madagascar"
+    },
+    "fileName": "mg_full.ghz",
+    "fileSizeMb": 42.3
+  }
+,
+  {
     "id": "za_full",
     "names": {
       "en": "South Africa",

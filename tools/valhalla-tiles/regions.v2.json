@@ -374,14 +374,25 @@
     }
   },
   {
-    "id": "us_south",
-    "geofabrikPath": "north-america/us-south",
-    "fileName": "us_south.vtiles.zip",
+    "id": "us_south_east",
+    "geofabrikPath": "MANUAL_MERGE",
+    "fileName": "us_south_east.vtiles.zip",
     "names": {
-      "en": "USA (South)",
-      "de": "USA (Süden)",
-      "fr": "USA (Sud)",
-      "it": "USA (Sud)"
+      "en": "USA (South East)",
+      "de": "USA (Südosten)",
+      "fr": "USA (Sud-Est)",
+      "it": "USA (Sud-Est)"
+    }
+  },
+  {
+    "id": "us_south_west",
+    "geofabrikPath": "MANUAL_MERGE",
+    "fileName": "us_south_west.vtiles.zip",
+    "names": {
+      "en": "USA (South West)",
+      "de": "USA (Südwesten)",
+      "fr": "USA (Sud-Ouest)",
+      "it": "USA (Sud-Ovest)"
     }
   },
   {
