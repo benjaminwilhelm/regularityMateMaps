@@ -396,6 +396,17 @@
     }
   },
   {
+    "id": "mg_full",
+    "geofabrikPath": "africa/madagascar",
+    "fileName": "mg_full.vtiles.zip",
+    "names": {
+      "en": "Madagascar",
+      "de": "Madagaskar",
+      "fr": "Madagascar",
+      "it": "Madagascar"
+    }
+  },
+  {
     "id": "za_full",
     "geofabrikPath": "africa/south-africa",
     "fileName": "za_full.vtiles.zip",
