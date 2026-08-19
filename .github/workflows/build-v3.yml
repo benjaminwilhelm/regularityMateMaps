@@ -150,12 +150,18 @@ jobs:
         # region does not delist every other.
         env:
           GH_TOKEN: ${{ github.token }}
+          # Through the environment, not interpolated into the script: toJson
+          # pretty-prints across several lines, which breaks a quoted literal
+          # inside the heredoc and fails the step after the tiles are already
+          # built -- an hour of work thrown away for a formatting detail.
+          ASSET: ${{ matrix.build }}
+          IDS: ${{ toJson(matrix.ids) }}
         run: |
           python3 - <<'PY'
-          import json, subprocess
+          import json, os, subprocess
           from pathlib import Path
-          asset = "${{ matrix.build }}"
-          ids = json.loads('${{ toJson(matrix.ids) }}')
+          asset = os.environ["ASSET"]
+          ids = json.loads(os.environ["IDS"])
           idx = json.loads(Path(f"packed/{asset}.idx.json").read_text())
           # One entry per client-requestable id, all pointing at this asset.
           # The client splits the US south by bounding box while Geofabrik ships
