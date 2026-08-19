@@ -24,7 +24,8 @@ name: Build maps-v3 (car-only)
 # ">=25% saved ships car-only"; 42% clears it comfortably.
 #
 # The cost is real: this builds tiles from a PBF rather than copying them, so it
-# is hours per region rather than minutes, and it must be run per region.
+# is hours per region rather than minutes. Regions build serially because they
+# share one release and one manifest.
 #
 # What is deliberately kept
 # -------------------------
@@ -40,30 +41,58 @@ name: Build maps-v3 (car-only)
 on:
   workflow_dispatch:
     inputs:
-      region:
-        description: 'Region id, e.g. ch_full'
+      builds:
+        description: 'Space-separated build names from regions.v3.json, or "all"'
         required: true
         default: 'ch_full'
-      pbf_url:
-        description: 'Geofabrik extract URL'
-        required: true
-        default: 'https://download.geofabrik.de/europe/switzerland-latest.osm.pbf'
       publish:
         description: 'Upload to the maps-v3 release (otherwise artifacts only)'
         type: boolean
         required: true
         default: false
 
+# Only one build run at a time. Each job publishes into the same release and
+# merges the same manifest, and two runs racing that merge would delist
+# whichever region lost.
 concurrency:
-  group: build-v3-${{ inputs.region }}
+  group: build-v3
   cancel-in-progress: false
 
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: plan
+        # The extract each asset is built from, and the ids that resolve to it,
+        # both come from regions.v3.json rather than being typed by hand.
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          spec = json.load(open('tools/valhalla-tiles/regions.v3.json'))['builds']
+          wanted = "${{ inputs.builds }}".split()
+          chosen = spec if wanted == ['all'] else [b for b in spec if b['build'] in wanted]
+          unknown = set(wanted) - {b['build'] for b in spec} - {'all'}
+          if unknown:
+              raise SystemExit(f"unknown build(s): {sorted(unknown)}")
+          print("matrix=" + json.dumps({"include": chosen}))
+          PY
+
   build:
+    needs: plan
     runs-on: ubuntu-latest
     timeout-minutes: 350
     permissions:
       contents: write
+    strategy:
+      # Serial. Each job merges the shared manifest and uploads to one release;
+      # in parallel they would clobber each other's manifest entries. Slower,
+      # and the only way the result is correct.
+      max-parallel: 1
+      fail-fast: false
+      matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -81,7 +110,9 @@ jobs:
 
       - name: Download the extract
         run: |
-          curl -sL -o region.osm.pbf "${{ inputs.pbf_url }}"
+          set -euo pipefail
+          curl -sL -o region.osm.pbf \
+            "https://download.geofabrik.de/${{ matrix.geofabrik }}-latest.osm.pbf"
           ls -la region.osm.pbf
 
       - name: Build car-only tiles
@@ -104,11 +135,11 @@ jobs:
         # the rebuild path and the repack path.
         run: |
           set -euo pipefail
-          cd out/tiles && zip -qr ../../${{ inputs.region }}.vtiles.zip . && cd ../..
+          cd out/tiles && zip -qr ../../${{ matrix.build }}.vtiles.zip . && cd ../..
           mkdir -p packed
           python3 tools/valhalla-tiles/repack_v3.py \
-            --region "${{ inputs.region }}" \
-            --zip "${{ inputs.region }}.vtiles.zip" \
+            --region "${{ matrix.build }}" \
+            --zip "${{ matrix.build }}.vtiles.zip" \
             --out packed
           ls -la packed
 
@@ -123,17 +154,24 @@ jobs:
           python3 - <<'PY'
           import json, subprocess
           from pathlib import Path
-          region = "${{ inputs.region }}"
-          idx = json.loads(Path(f"packed/{region}.idx.json").read_text())
-          entry = {
-              "id": region,
-              "build": idx["build"],
-              "vtar": f"{region}.vtar",
-              "idx": f"{region}.idx.json",
-              "tileCount": idx["tileCount"],
-              "vtarBytes": idx["vtarBytes"],
+          asset = "${{ matrix.build }}"
+          ids = json.loads('${{ toJson(matrix.ids) }}')
+          idx = json.loads(Path(f"packed/{asset}.idx.json").read_text())
+          # One entry per client-requestable id, all pointing at this asset.
+          # The client splits the US south by bounding box while Geofabrik ships
+          # it as one extract; two ids sharing a vtar costs nothing and beats
+          # building the same tiles twice.
+          merged = {
+              rid: {
+                  "id": rid,
+                  "build": idx["build"],
+                  "vtar": f"{asset}.vtar",
+                  "idx": f"{asset}.idx.json",
+                  "tileCount": idx["tileCount"],
+                  "vtarBytes": idx["vtarBytes"],
+              }
+              for rid in ids
           }
-          merged = {region: entry}
           try:
               subprocess.run(
                   ["gh", "release", "download", "maps-v3", "-p", "regions-v3.json", "-D", "_prev"],
@@ -154,7 +192,7 @@ jobs:
         if: ${{ !inputs.publish }}
         uses: actions/upload-artifact@v4
         with:
-          name: maps-v3-${{ inputs.region }}
+          name: maps-v3-${{ matrix.build }}
           path: packed/
           retention-days: 7
 
@@ -170,6 +208,6 @@ jobs:
           # --clobber so re-running one region replaces just that region's
           # assets, and the merged manifest replaces the previous one.
           gh release upload maps-v3 \
-            "packed/${{ inputs.region }}.vtar" \
-            "packed/${{ inputs.region }}.idx.json" \
+            "packed/${{ matrix.build }}.vtar" \
+            "packed/${{ matrix.build }}.idx.json" \
             "packed/regions-v3.json" --clobber

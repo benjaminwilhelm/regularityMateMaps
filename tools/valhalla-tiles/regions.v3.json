@@ -1,0 +1,272 @@
+{
+  "_comment": "Which OSM extract each maps-v3 asset is built from, and which region ids resolve to it. Several ids may share one build: the client splits the US south into east and west by bounding box while Geofabrik ships it as one extract, and the manifest simply points both ids at the same vtar rather than building it twice.",
+  "builds": [
+    {
+      "build": "at_full",
+      "geofabrik": "europe/austria",
+      "ids": [
+        "at_full"
+      ]
+    },
+    {
+      "build": "au_full",
+      "geofabrik": "australia-oceania/australia",
+      "ids": [
+        "au_full"
+      ]
+    },
+    {
+      "build": "be_full",
+      "geofabrik": "europe/belgium",
+      "ids": [
+        "be_full"
+      ]
+    },
+    {
+      "build": "bg_full",
+      "geofabrik": "europe/bulgaria",
+      "ids": [
+        "bg_full"
+      ]
+    },
+    {
+      "build": "ca_alberta",
+      "geofabrik": "north-america/canada/alberta",
+      "ids": [
+        "ca_alberta"
+      ]
+    },
+    {
+      "build": "ca_bc",
+      "geofabrik": "north-america/canada/british-columbia",
+      "ids": [
+        "ca_bc"
+      ]
+    },
+    {
+      "build": "ca_ontario",
+      "geofabrik": "north-america/canada/ontario",
+      "ids": [
+        "ca_ontario"
+      ]
+    },
+    {
+      "build": "ca_quebec",
+      "geofabrik": "north-america/canada/quebec",
+      "ids": [
+        "ca_quebec"
+      ]
+    },
+    {
+      "build": "ch_full",
+      "geofabrik": "europe/switzerland",
+      "ids": [
+        "ch_full"
+      ]
+    },
+    {
+      "build": "co_full",
+      "geofabrik": "south-america/colombia",
+      "ids": [
+        "co_full"
+      ]
+    },
+    {
+      "build": "cz_full",
+      "geofabrik": "europe/czech-republic",
+      "ids": [
+        "cz_full"
+      ]
+    },
+    {
+      "build": "de_full",
+      "geofabrik": "europe/germany",
+      "ids": [
+        "de_full"
+      ]
+    },
+    {
+      "build": "dk_full",
+      "geofabrik": "europe/denmark",
+      "ids": [
+        "dk_full"
+      ]
+    },
+    {
+      "build": "do_full",
+      "geofabrik": "central-america/haiti-and-domrep",
+      "ids": [
+        "do_full"
+      ]
+    },
+    {
+      "build": "es_full",
+      "geofabrik": "europe/spain",
+      "ids": [
+        "es_full"
+      ]
+    },
+    {
+      "build": "fr_full",
+      "geofabrik": "europe/france",
+      "ids": [
+        "fr_full"
+      ]
+    },
+    {
+      "build": "gr_full",
+      "geofabrik": "europe/greece",
+      "ids": [
+        "gr_full"
+      ]
+    },
+    {
+      "build": "hr_full",
+      "geofabrik": "europe/croatia",
+      "ids": [
+        "hr_full"
+      ]
+    },
+    {
+      "build": "hu_full",
+      "geofabrik": "europe/hungary",
+      "ids": [
+        "hu_full"
+      ]
+    },
+    {
+      "build": "id_full",
+      "geofabrik": "asia/indonesia",
+      "ids": [
+        "id_full"
+      ]
+    },
+    {
+      "build": "it_full",
+      "geofabrik": "europe/italy",
+      "ids": [
+        "it_full"
+      ]
+    },
+    {
+      "build": "mg_full",
+      "geofabrik": "africa/madagascar",
+      "ids": [
+        "mg_full"
+      ]
+    },
+    {
+      "build": "nl_full",
+      "geofabrik": "europe/netherlands",
+      "ids": [
+        "nl_full"
+      ]
+    },
+    {
+      "build": "no_full",
+      "geofabrik": "europe/norway",
+      "ids": [
+        "no_full"
+      ]
+    },
+    {
+      "build": "pl_full",
+      "geofabrik": "europe/poland",
+      "ids": [
+        "pl_full"
+      ]
+    },
+    {
+      "build": "pt_full",
+      "geofabrik": "europe/portugal",
+      "ids": [
+        "pt_full"
+      ]
+    },
+    {
+      "build": "ro_full",
+      "geofabrik": "europe/romania",
+      "ids": [
+        "ro_full"
+      ]
+    },
+    {
+      "build": "rs_full",
+      "geofabrik": "europe/serbia",
+      "ids": [
+        "rs_full"
+      ]
+    },
+    {
+      "build": "se_full",
+      "geofabrik": "europe/sweden",
+      "ids": [
+        "se_full"
+      ]
+    },
+    {
+      "build": "si_full",
+      "geofabrik": "europe/slovenia",
+      "ids": [
+        "si_full"
+      ]
+    },
+    {
+      "build": "sk_full",
+      "geofabrik": "europe/slovakia",
+      "ids": [
+        "sk_full"
+      ]
+    },
+    {
+      "build": "uk_full",
+      "geofabrik": "europe/great-britain",
+      "ids": [
+        "uk_full"
+      ]
+    },
+    {
+      "build": "us_midwest",
+      "geofabrik": "north-america/us-midwest",
+      "ids": [
+        "us_midwest"
+      ]
+    },
+    {
+      "build": "us_northeast",
+      "geofabrik": "north-america/us-northeast",
+      "ids": [
+        "us_northeast"
+      ]
+    },
+    {
+      "build": "us_pacific",
+      "geofabrik": "north-america/us-pacific",
+      "ids": [
+        "us_pacific"
+      ]
+    },
+    {
+      "build": "us_south",
+      "geofabrik": "north-america/us-south",
+      "ids": [
+        "us_south_east",
+        "us_south_west"
+      ]
+    },
+    {
+      "build": "us_west",
+      "geofabrik": "north-america/us-west",
+      "ids": [
+        "us_west"
+      ]
+    },
+    {
+      "build": "za_full",
+      "geofabrik": "africa/south-africa",
+      "ids": [
+        "za_full"
+      ]
+    }
+  ]
+}
