@@ -112,6 +112,44 @@ jobs:
             --out packed
           ls -la packed
 
+      - name: Merge the manifest
+        # Without this the region is published and no client can find it:
+        # regions-v3.json is the only discovery path, and a vtar nobody can
+        # look up is invisible. Merged rather than written, so building one
+        # region does not delist every other.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          region = "${{ inputs.region }}"
+          idx = json.loads(Path(f"packed/{region}.idx.json").read_text())
+          entry = {
+              "id": region,
+              "build": idx["build"],
+              "vtar": f"{region}.vtar",
+              "idx": f"{region}.idx.json",
+              "tileCount": idx["tileCount"],
+              "vtarBytes": idx["vtarBytes"],
+          }
+          merged = {region: entry}
+          try:
+              subprocess.run(
+                  ["gh", "release", "download", "maps-v3", "-p", "regions-v3.json", "-D", "_prev"],
+                  check=True, capture_output=True,
+              )
+              prev = json.loads(Path("_prev/regions-v3.json").read_text())
+              for r in prev["regions"]:
+                  merged.setdefault(r["id"], r)
+              print(f"merged {len(prev['regions'])} previously published region(s)")
+          except subprocess.CalledProcessError:
+              print("no previous manifest; publishing this region only")
+          out = {"build": idx["build"], "regions": [merged[k] for k in sorted(merged)]}
+          Path("packed/regions-v3.json").write_text(json.dumps(out, indent=2, sort_keys=True))
+          print(f"manifest now lists {len(out['regions'])} region(s)")
+          PY
+
       - name: Upload artifacts
         if: ${{ !inputs.publish }}
         uses: actions/upload-artifact@v4
@@ -129,8 +167,9 @@ jobs:
           gh release view maps-v3 >/dev/null 2>&1 || \
             gh release create maps-v3 --title "Valhalla tiles v3 (corridor format, car-only)" \
               --notes "Per-tile addressable regions, built without pedestrian or bicycle data. See tools/valhalla-tiles/repack_v3.py."
-          # --clobber so re-running one region replaces just that region's assets.
-          # regions-v3.json is merged by repack-v3.yml, which owns the manifest.
+          # --clobber so re-running one region replaces just that region's
+          # assets, and the merged manifest replaces the previous one.
           gh release upload maps-v3 \
             "packed/${{ inputs.region }}.vtar" \
-            "packed/${{ inputs.region }}.idx.json" --clobber
+            "packed/${{ inputs.region }}.idx.json" \
+            "packed/regions-v3.json" --clobber
