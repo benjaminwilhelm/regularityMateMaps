@@ -1,0 +1,136 @@
+name: Build maps-v3 (car-only)
+
+# Builds a region's Valhalla tiles from an OSM extract with pedestrian and
+# bicycle data excluded, then packs them into the maps-v3 corridor format.
+#
+# Why this exists alongside repack-v3.yml
+# ---------------------------------------
+#
+# `repack-v3.yml` re-containers the existing maps-v2 tiles. It makes corridor
+# downloads possible without touching tile content, and it is the fast path.
+#
+# This workflow *rebuilds* them, and the measurement says it is worth it.
+# Measured on the real Swiss extract, comparing a default build against one with
+# `--mjolnir-include-pedestrian false --mjolnir-include-bicycle false`:
+#
+#     level          full MB   car-only MB   saved
+#     L0 highway        18.9          17.2      9%
+#     L1 arterial       47.9          42.7     11%
+#     L2 local         564.8         306.8     46%
+#     TOTAL            631.5         366.7     42%
+#
+# Level 2 is where a corridor's bytes are, and it nearly halves. A 31.5 MB
+# alpine corridor becomes roughly 18 MB on disk. The plan's decision rule was
+# ">=25% saved ships car-only"; 42% clears it comfortably.
+#
+# The cost is real: this builds tiles from a PBF rather than copying them, so it
+# is hours per region rather than minutes, and it must be run per region.
+#
+# What is deliberately kept
+# -------------------------
+#
+# Only pedestrian and bicycle *access* are dropped. Service roads, tracks and
+# unclassified roads all stay: a rally route can legitimately run over a farm
+# track or a car park approach, and the promise of the corridor plan is no
+# compromise on roads anyone might actually drive. Valhalla's own switches are
+# used rather than filtering the extract with osmium, because filtering by hand
+# quietly drops the turn restrictions and admin boundaries that routing
+# correctness depends on.
+
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: 'Region id, e.g. ch_full'
+        required: true
+        default: 'ch_full'
+      pbf_url:
+        description: 'Geofabrik extract URL'
+        required: true
+        default: 'https://download.geofabrik.de/europe/switzerland-latest.osm.pbf'
+      publish:
+        description: 'Upload to the maps-v3 release (otherwise artifacts only)'
+        type: boolean
+        required: true
+        default: false
+
+concurrency:
+  group: build-v3-${{ inputs.region }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Free disk space
+        # A large extract plus its tiles plus the packed output does not fit
+        # alongside the runner's preinstalled toolchains.
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          df -h /
+
+      - name: Download the extract
+        run: |
+          curl -sL -o region.osm.pbf "${{ inputs.pbf_url }}"
+          ls -la region.osm.pbf
+
+      - name: Build car-only tiles
+        run: |
+          set -euo pipefail
+          docker pull ghcr.io/valhalla/valhalla:latest
+          mkdir -p out
+          docker run --rm -v "$PWD:/w" -w /w ghcr.io/valhalla/valhalla:latest sh -c \
+            "valhalla_build_config \
+               --mjolnir-tile-dir /w/out/tiles \
+               --mjolnir-include-pedestrian false \
+               --mjolnir-include-bicycle false \
+               > /w/out/valhalla.json && \
+             valhalla_build_tiles -c /w/out/valhalla.json /w/region.osm.pbf"
+          du -sh out/tiles
+
+      - name: Pack to the maps-v3 format
+        # repack_v3.py takes a zip, so the freshly built tree is zipped first.
+        # Keeping one packer means the container format cannot drift between
+        # the rebuild path and the repack path.
+        run: |
+          set -euo pipefail
+          cd out/tiles && zip -qr ../../${{ inputs.region }}.vtiles.zip . && cd ../..
+          mkdir -p packed
+          python3 tools/valhalla-tiles/repack_v3.py \
+            --region "${{ inputs.region }}" \
+            --zip "${{ inputs.region }}.vtiles.zip" \
+            --out packed
+          ls -la packed
+
+      - name: Upload artifacts
+        if: ${{ !inputs.publish }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: maps-v3-${{ inputs.region }}
+          path: packed/
+          retention-days: 7
+
+      - name: Publish to the maps-v3 release
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view maps-v3 >/dev/null 2>&1 || \
+            gh release create maps-v3 --title "Valhalla tiles v3 (corridor format, car-only)" \
+              --notes "Per-tile addressable regions, built without pedestrian or bicycle data. See tools/valhalla-tiles/repack_v3.py."
+          # --clobber so re-running one region replaces just that region's assets.
+          # regions-v3.json is merged by repack-v3.yml, which owns the manifest.
+          gh release upload maps-v3 \
+            "packed/${{ inputs.region }}.vtar" \
+            "packed/${{ inputs.region }}.idx.json" --clobber

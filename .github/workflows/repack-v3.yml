@@ -1,0 +1,118 @@
+name: Repack maps-v3
+
+# Turns the published maps-v2 zips into the maps-v3 corridor format.
+#
+# This is a *repack*, not a rebuild: no OSM data is processed and the tile bytes
+# are identical to maps-v2. It exists so a client can fetch the 5% of a country
+# a route actually needs instead of the whole thing.
+#
+# Deliberately manual. It moves tens of gigabytes and publishes a release, and
+# neither of those should happen because someone pushed a README fix.
+
+on:
+  workflow_dispatch:
+    inputs:
+      regions:
+        description: 'Space-separated region ids, or "all"'
+        required: true
+        default: 'ch_full'
+      publish:
+        description: 'Upload to the maps-v3 release (otherwise artifacts only)'
+        type: boolean
+        required: true
+        default: false
+
+concurrency:
+  group: repack-v3
+  cancel-in-progress: false
+
+jobs:
+  repack:
+    runs-on: ubuntu-latest
+    # A large region is ~1.8 GB in and a similar size out; the runner's own disk
+    # is the binding constraint, so regions are processed one at a time and the
+    # v2 cache is cleared between them.
+    timeout-minutes: 350
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Free disk space
+        # ubuntu-latest ships ~30 GB of toolchains this job will never use, and
+        # a single large region plus its cache does not otherwise fit.
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          df -h /
+
+      - name: Repack
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          if [ "${{ inputs.regions }}" = "all" ]; then
+            REGIONS=$(python3 -c "import json;print(' '.join(r['id'] for r in json.load(open('regions.json'))))")
+          else
+            REGIONS="${{ inputs.regions }}"
+          fi
+          for r in $REGIONS; do
+            echo "::group::$r"
+            python3 tools/valhalla-tiles/repack_v3.py --region "$r" --out out --cache _v2cache
+            # The v2 zip is only needed while its own region is repacked.
+            rm -rf _v2cache
+            df -h / | tail -1
+            echo "::endgroup::"
+          done
+          ls -la out
+
+      - name: Merge the manifest
+        # Each run writes regions-v3.json for the regions it built. When a run
+        # covers only some regions, the published manifest must keep the rest,
+        # or clients lose every region this run did not touch.
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess, sys
+          from pathlib import Path
+          new = json.loads(Path('out/regions-v3.json').read_text())
+          merged = {r['id']: r for r in new['regions']}
+          try:
+              subprocess.run(
+                  ['gh', 'release', 'download', 'maps-v3', '-p', 'regions-v3.json', '-D', '_prev'],
+                  check=True, capture_output=True,
+              )
+              prev = json.loads(Path('_prev/regions-v3.json').read_text())
+              for r in prev['regions']:
+                  merged.setdefault(r['id'], r)
+              print(f"merged {len(prev['regions'])} previously published region(s)")
+          except subprocess.CalledProcessError:
+              print('no previous manifest; publishing this run only')
+          out = {'build': new['build'], 'regions': [merged[k] for k in sorted(merged)]}
+          Path('out/regions-v3.json').write_text(json.dumps(out, indent=2, sort_keys=True))
+          print(f"manifest now lists {len(out['regions'])} region(s)")
+          PY
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Upload artifacts
+        if: ${{ !inputs.publish }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: maps-v3
+          path: out/
+          retention-days: 7
+
+      - name: Publish to the maps-v3 release
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view maps-v3 >/dev/null 2>&1 || \
+            gh release create maps-v3 --title "Valhalla tiles v3 (corridor format)" \
+              --notes "Per-tile addressable regions. See tools/valhalla-tiles/repack_v3.py."
+          # --clobber so a re-run of one region replaces just that region's assets.
+          gh release upload maps-v3 out/* --clobber

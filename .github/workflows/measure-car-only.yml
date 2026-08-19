@@ -1,0 +1,111 @@
+name: Measure car-only tile size
+
+# Phase 0 of docs/trek-corridor-maps.md: settle, with a number rather than a
+# guess, whether stripping pedestrian and bicycle data from the OSM extract
+# meaningfully shrinks Valhalla tiles.
+#
+# The bet: level 2 (local roads) is 89% of a region's bytes, and a large share
+# of local-level OSM ways are footpaths, cycleways and steps that a rally app
+# will never route over. If that is worth 30-50%, maps-v3 should ship car-only
+# from the start and every corridor gets smaller for free. If it is worth 5%,
+# the idea dies here and we have paid one CI run to find out.
+#
+# Builds the same region twice and diffs. Nothing depends on the outcome, so it
+# can run whenever.
+
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: 'Region id from regions.v2.json'
+        required: true
+        default: 'ch_full'
+      pbf_url:
+        description: 'Geofabrik extract URL'
+        required: true
+        default: 'https://download.geofabrik.de/europe/switzerland-latest.osm.pbf'
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          df -h /
+
+      - name: Install osmium
+        run: sudo apt-get update && sudo apt-get install -y osmium-tool
+
+      - name: Download the extract
+        run: |
+          curl -sL -o full.osm.pbf "${{ inputs.pbf_url }}"
+          ls -la full.osm.pbf
+
+      - name: Filter to drivable ways
+        # Keep every highway class a car may legally use, plus the relations
+        # carrying turn restrictions -- dropping those would change routing
+        # correctness, not merely size, and would make the comparison useless.
+        #
+        # Deliberately KEEPS service and track: a rally route can legitimately
+        # run over a farm track or a car park approach, and the whole promise of
+        # this plan is "no compromises" on the roads we might actually drive.
+        run: |
+          set -euo pipefail
+          osmium tags-filter full.osm.pbf \
+            w/highway=motorway,motorway_link,trunk,trunk_link,primary,primary_link,secondary,secondary_link,tertiary,tertiary_link,unclassified,residential,living_street,service,track,road \
+            r/type=restriction \
+            r/type=boundary \
+            -o car.osm.pbf --overwrite
+          ls -la full.osm.pbf car.osm.pbf
+
+      - name: Build both tile sets
+        run: |
+          set -euo pipefail
+          docker pull ghcr.io/valhalla/valhalla:latest
+          build() {
+            local pbf="$1" out="$2"
+            mkdir -p "$out"
+            docker run --rm -v "$PWD:/work" -w /work ghcr.io/valhalla/valhalla:latest \
+              sh -c "valhalla_build_config --mjolnir-tile-dir /work/$out/tiles > /work/$out/valhalla.json && \
+                     valhalla_build_tiles -c /work/$out/valhalla.json /work/$pbf"
+          }
+          build full.osm.pbf out_full
+          build car.osm.pbf  out_car
+
+      - name: Report
+        run: |
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          def stats(root):
+              per = {}
+              for p in Path(root).rglob('*.gph'):
+                  lvl = int(re.search(r'/(\d)/(?:\d{3}/)*\d{3}\.gph$', '/'+str(p)).group(1))
+                  n, b = per.get(lvl, (0, 0))
+                  per[lvl] = (n + 1, b + p.stat().st_size)
+              return per
+          a, b = stats('out_full/tiles'), stats('out_car/tiles')
+          ta, tb = sum(v[1] for v in a.values()), sum(v[1] for v in b.values())
+          print(f"{'level':>6} {'full MB':>10} {'car MB':>10} {'saved':>8}")
+          for lvl in sorted(set(a) | set(b)):
+              fa, fb = a.get(lvl, (0,0))[1], b.get(lvl, (0,0))[1]
+              pct = 100*(1-fb/fa) if fa else 0
+              print(f"{lvl:>6} {fa/1e6:10.1f} {fb/1e6:10.1f} {pct:7.0f}%")
+          print(f"{'TOTAL':>6} {ta/1e6:10.1f} {tb/1e6:10.1f} {100*(1-tb/ta):7.0f}%")
+          print()
+          print("Decision rule from docs/trek-corridor-maps.md:")
+          print("  >=25% saved  -> maps-v3 ships car-only, rebuild all regions")
+          print("  <25% saved   -> drop the idea, v3 stays a straight repack")
+          PY
+
+      - name: Upload the car-only tiles
+        uses: actions/upload-artifact@v4
+        with:
+          name: car-only-tiles-${{ inputs.region }}
+          path: out_car/tiles
+          retention-days: 3
