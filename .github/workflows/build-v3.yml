@@ -77,6 +77,11 @@ jobs:
           unknown = set(wanted) - {b['build'] for b in spec} - {'all'}
           if unknown:
               raise SystemExit(f"unknown build(s): {sorted(unknown)}")
+          # Every entry must carry the same keys: a matrix include whose key is
+          # missing makes `matrix.bbox` null, and the step condition that reads
+          # it then behaves differently from one that reads an empty string.
+          for b in chosen:
+              b.setdefault("bbox", "")
           print("matrix=" + json.dumps({"include": chosen}))
           PY
 
@@ -115,6 +120,21 @@ jobs:
             "https://download.geofabrik.de/${{ matrix.geofabrik }}-latest.osm.pbf"
           ls -la region.osm.pbf
 
+      - name: Cut the extract to its bounding box
+        # Only for builds that declare one. Geofabrik ships the US south whole
+        # and its tiles come to 2.37 GB, past GitHub's 2 GiB asset ceiling, so
+        # it is split on the client's own boxes. --strategy complete_ways keeps
+        # a road that leaves the box intact rather than truncating it mid-way,
+        # which would leave routing walking off the end of a severed edge.
+        if: ${{ matrix.bbox != '' }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends osmium-tool
+          osmium extract --bbox "${{ matrix.bbox }}" --strategy complete_ways \
+            -o cut.osm.pbf region.osm.pbf --overwrite
+          mv cut.osm.pbf region.osm.pbf
+          ls -la region.osm.pbf
+
       - name: Build car-only tiles
         run: |
           set -euo pipefail
@@ -143,11 +163,32 @@ jobs:
             --out packed
           ls -la packed
 
-      - name: Merge the manifest
-        # Without this the region is published and no client can find it:
-        # regions-v3.json is the only discovery path, and a vtar nobody can
-        # look up is invisible. Merged rather than written, so building one
-        # region does not delist every other.
+      - name: Refuse an asset GitHub will not accept
+        # A release asset is capped at 2 GiB and the upload fails with an opaque
+        # HTTP 422 after the whole build. Saying so here, with the number,
+        # turns hours of wasted work into an obvious instruction to add a bbox
+        # split for this region.
+        run: |
+          set -euo pipefail
+          BYTES=$(stat -c%s "packed/${{ matrix.build }}.vtar")
+          LIMIT=$((2 * 1024 * 1024 * 1024))
+          echo "${{ matrix.build }}.vtar is $((BYTES / 1000000)) MB"
+          if [ "$BYTES" -ge "$LIMIT" ]; then
+            echo "::error::${{ matrix.build }}.vtar is $((BYTES / 1000000)) MB, over GitHub's 2 GiB asset limit. Split it with a bbox in tools/valhalla-tiles/regions.v3.json."
+            exit 1
+          fi
+
+      - name: Rebuild the manifest from the release
+        # regions-v3.json is the only discovery path: a vtar nobody can look up
+        # is invisible to every client.
+        #
+        # Derived from the assets actually on the release, not merged onto a
+        # previously downloaded copy. The merge version silently truncated: when
+        # `gh release download` hiccupped it fell back to "publish this region
+        # only" and --clobber then destroyed every other entry. That is exactly
+        # what happened on the first full run -- 37 regions were published and
+        # the manifest listed two. Reading the release back cannot lose regions
+        # and repairs a manifest that has already been damaged.
         env:
           GH_TOKEN: ${{ github.token }}
           # Through the environment, not interpolated into the script: toJson
@@ -160,38 +201,53 @@ jobs:
           python3 - <<'PY'
           import json, os, subprocess
           from pathlib import Path
+
           asset = os.environ["ASSET"]
-          ids = json.loads(os.environ["IDS"])
           idx = json.loads(Path(f"packed/{asset}.idx.json").read_text())
-          # One entry per client-requestable id, all pointing at this asset.
-          # The client splits the US south by bounding box while Geofabrik ships
-          # it as one extract; two ids sharing a vtar costs nothing and beats
-          # building the same tiles twice.
-          merged = {
-              rid: {
-                  "id": rid,
-                  "build": idx["build"],
-                  "vtar": f"{asset}.vtar",
-                  "idx": f"{asset}.idx.json",
-                  "tileCount": idx["tileCount"],
-                  "vtarBytes": idx["vtarBytes"],
-              }
-              for rid in ids
-          }
-          try:
+          spec = json.load(open("tools/valhalla-tiles/regions.v3.json"))["builds"]
+          ids_for = {b["build"]: b["ids"] for b in spec}
+
+          # Every index on the release, plus the one about to be uploaded.
+          listing = json.loads(subprocess.run(
+              ["gh", "release", "view", "maps-v3", "--json", "assets"],
+              check=True, capture_output=True, text=True,
+          ).stdout)["assets"]
+          sizes = {a["name"]: a["size"] for a in listing}
+
+          Path("_idx").mkdir(exist_ok=True)
+          published = {}
+          for name in [a["name"] for a in listing if a["name"].endswith(".idx.json")]:
+              build_name = name[: -len(".idx.json")]
+              if build_name == asset:
+                  published[build_name] = idx
+                  continue
+              # An index whose vtar is absent describes nothing fetchable -- the
+              # 2 GiB asset limit leaves exactly that behind when an upload is
+              # rejected. Skipping it keeps the manifest honest.
+              if f"{build_name}.vtar" not in sizes:
+                  print(f"skipping {build_name}: no vtar on the release")
+                  continue
               subprocess.run(
-                  ["gh", "release", "download", "maps-v3", "-p", "regions-v3.json", "-D", "_prev"],
+                  ["gh", "release", "download", "maps-v3", "-p", name, "-D", "_idx", "--clobber"],
                   check=True, capture_output=True,
               )
-              prev = json.loads(Path("_prev/regions-v3.json").read_text())
-              for r in prev["regions"]:
-                  merged.setdefault(r["id"], r)
-              print(f"merged {len(prev['regions'])} previously published region(s)")
-          except subprocess.CalledProcessError:
-              print("no previous manifest; publishing this region only")
-          out = {"build": idx["build"], "regions": [merged[k] for k in sorted(merged)]}
+              published[build_name] = json.loads(Path("_idx", name).read_text())
+
+          regions = []
+          for build_name, doc in published.items():
+              for rid in ids_for.get(build_name, [build_name]):
+                  regions.append({
+                      "id": rid,
+                      "build": doc["build"],
+                      "vtar": f"{build_name}.vtar",
+                      "idx": f"{build_name}.idx.json",
+                      "tileCount": doc["tileCount"],
+                      "vtarBytes": doc["vtarBytes"],
+                  })
+
+          out = {"build": idx["build"], "regions": sorted(regions, key=lambda r: r["id"])}
           Path("packed/regions-v3.json").write_text(json.dumps(out, indent=2, sort_keys=True))
-          print(f"manifest now lists {len(out['regions'])} region(s)")
+          print(f"manifest lists {len(regions)} region id(s) from {len(published)} asset(s)")
           PY
 
       - name: Upload artifacts

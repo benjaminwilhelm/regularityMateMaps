@@ -1,6 +1,13 @@
 {
-  "_comment": "Which OSM extract each maps-v3 asset is built from, and which region ids resolve to it. Several ids may share one build: the client splits the US south into east and west by bounding box while Geofabrik ships it as one extract, and the manifest simply points both ids at the same vtar rather than building it twice.",
+  "_comment": "Which OSM extract each maps-v3 asset is built from, and which region ids resolve to it. An optional bbox (minLon,minLat,maxLon,maxLat) cuts the extract before building: Geofabrik ships the US south whole, but its tiles exceed GitHub's 2 GiB asset limit, so it is split on the client's own bounding boxes widened by roughly a degree.",
   "builds": [
+    {
+      "build": "ar_full",
+      "geofabrik": "south-america/argentina",
+      "ids": [
+        "ar_full"
+      ]
+    },
     {
       "build": "at_full",
       "geofabrik": "europe/austria",
@@ -65,6 +72,13 @@
       ]
     },
     {
+      "build": "cl_full",
+      "geofabrik": "south-america/chile",
+      "ids": [
+        "cl_full"
+      ]
+    },
+    {
       "build": "co_full",
       "geofabrik": "south-america/colombia",
       "ids": [
@@ -100,10 +114,24 @@
       ]
     },
     {
+      "build": "ee_full",
+      "geofabrik": "europe/estonia",
+      "ids": [
+        "ee_full"
+      ]
+    },
+    {
       "build": "es_full",
       "geofabrik": "europe/spain",
       "ids": [
         "es_full"
+      ]
+    },
+    {
+      "build": "fi_full",
+      "geofabrik": "europe/finland",
+      "ids": [
+        "fi_full"
       ]
     },
     {
@@ -142,6 +170,13 @@
       ]
     },
     {
+      "build": "ie_full",
+      "geofabrik": "europe/ireland-and-northern-ireland",
+      "ids": [
+        "ie_full"
+      ]
+    },
+    {
       "build": "it_full",
       "geofabrik": "europe/italy",
       "ids": [
@@ -149,10 +184,59 @@
       ]
     },
     {
+      "build": "jp_full",
+      "geofabrik": "asia/japan",
+      "ids": [
+        "jp_full"
+      ]
+    },
+    {
+      "build": "ke_full",
+      "geofabrik": "africa/kenya",
+      "ids": [
+        "ke_full"
+      ]
+    },
+    {
+      "build": "lt_full",
+      "geofabrik": "europe/lithuania",
+      "ids": [
+        "lt_full"
+      ]
+    },
+    {
+      "build": "lu_full",
+      "geofabrik": "europe/luxembourg",
+      "ids": [
+        "lu_full"
+      ]
+    },
+    {
+      "build": "lv_full",
+      "geofabrik": "europe/latvia",
+      "ids": [
+        "lv_full"
+      ]
+    },
+    {
+      "build": "ma_full",
+      "geofabrik": "africa/morocco",
+      "ids": [
+        "ma_full"
+      ]
+    },
+    {
       "build": "mg_full",
       "geofabrik": "africa/madagascar",
       "ids": [
         "mg_full"
+      ]
+    },
+    {
+      "build": "mx_full",
+      "geofabrik": "north-america/mexico",
+      "ids": [
+        "mx_full"
       ]
     },
     {
@@ -167,6 +251,13 @@
       "geofabrik": "europe/norway",
       "ids": [
         "no_full"
+      ]
+    },
+    {
+      "build": "nz_full",
+      "geofabrik": "australia-oceania/new-zealand",
+      "ids": [
+        "nz_full"
       ]
     },
     {
@@ -219,6 +310,13 @@
       ]
     },
     {
+      "build": "tr_full",
+      "geofabrik": "europe/turkey",
+      "ids": [
+        "tr_full"
+      ]
+    },
+    {
       "build": "uk_full",
       "geofabrik": "europe/great-britain",
       "ids": [
@@ -247,10 +345,18 @@
       ]
     },
     {
-      "build": "us_south",
+      "build": "us_south_east",
       "geofabrik": "north-america/us-south",
+      "bbox": "-95.6,23.5,-74.0,40.2",
       "ids": [
-        "us_south_east",
+        "us_south_east"
+      ]
+    },
+    {
+      "build": "us_south_west",
+      "geofabrik": "north-america/us-south",
+      "bbox": "-115.8,24.8,-92.5,38.0",
+      "ids": [
         "us_south_west"
       ]
     },
