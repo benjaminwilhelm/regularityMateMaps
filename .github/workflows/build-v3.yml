@@ -189,66 +189,17 @@ jobs:
         # what happened on the first full run -- 37 regions were published and
         # the manifest listed two. Reading the release back cannot lose regions
         # and repairs a manifest that has already been damaged.
+        #
+        # It is one shared tool rather than a script inlined here, because the
+        # big clusters are built on a workstation and not in CI. Two copies of
+        # this logic would mean a per-country run rebuilding the manifest
+        # *without* the cluster section, quietly delisting every asset that
+        # makes a border crossing work.
         env:
           GH_TOKEN: ${{ github.token }}
-          # Through the environment, not interpolated into the script: toJson
-          # pretty-prints across several lines, which breaks a quoted literal
-          # inside the heredoc and fails the step after the tiles are already
-          # built -- an hour of work thrown away for a formatting detail.
-          ASSET: ${{ matrix.build }}
-          IDS: ${{ toJson(matrix.ids) }}
         run: |
-          python3 - <<'PY'
-          import json, os, subprocess
-          from pathlib import Path
-
-          asset = os.environ["ASSET"]
-          idx = json.loads(Path(f"packed/{asset}.idx.json").read_text())
-          spec = json.load(open("tools/valhalla-tiles/regions.v3.json"))["builds"]
-          ids_for = {b["build"]: b["ids"] for b in spec}
-
-          # Every index on the release, plus the one about to be uploaded.
-          listing = json.loads(subprocess.run(
-              ["gh", "release", "view", "maps-v3", "--json", "assets"],
-              check=True, capture_output=True, text=True,
-          ).stdout)["assets"]
-          sizes = {a["name"]: a["size"] for a in listing}
-
-          Path("_idx").mkdir(exist_ok=True)
-          published = {}
-          for name in [a["name"] for a in listing if a["name"].endswith(".idx.json")]:
-              build_name = name[: -len(".idx.json")]
-              if build_name == asset:
-                  published[build_name] = idx
-                  continue
-              # An index whose vtar is absent describes nothing fetchable -- the
-              # 2 GiB asset limit leaves exactly that behind when an upload is
-              # rejected. Skipping it keeps the manifest honest.
-              if f"{build_name}.vtar" not in sizes:
-                  print(f"skipping {build_name}: no vtar on the release")
-                  continue
-              subprocess.run(
-                  ["gh", "release", "download", "maps-v3", "-p", name, "-D", "_idx", "--clobber"],
-                  check=True, capture_output=True,
-              )
-              published[build_name] = json.loads(Path("_idx", name).read_text())
-
-          regions = []
-          for build_name, doc in published.items():
-              for rid in ids_for.get(build_name, [build_name]):
-                  regions.append({
-                      "id": rid,
-                      "build": doc["build"],
-                      "vtar": f"{build_name}.vtar",
-                      "idx": f"{build_name}.idx.json",
-                      "tileCount": doc["tileCount"],
-                      "vtarBytes": doc["vtarBytes"],
-                  })
-
-          out = {"build": idx["build"], "regions": sorted(regions, key=lambda r: r["id"])}
-          Path("packed/regions-v3.json").write_text(json.dumps(out, indent=2, sort_keys=True))
-          print(f"manifest lists {len(regions)} region id(s) from {len(published)} asset(s)")
-          PY
+          set -euo pipefail
+          python3 tools/valhalla-tiles/merge_manifest.py --out packed/regions-v3.json --extra packed
 
       - name: Upload artifacts
         if: ${{ !inputs.publish }}
@@ -272,4 +223,5 @@ jobs:
           gh release upload maps-v3 \
             "packed/${{ matrix.build }}.vtar" \
             "packed/${{ matrix.build }}.idx.json" \
-            "packed/regions-v3.json" --clobber
+            "packed/regions-v3.json" \
+            ATTRIBUTION.txt --clobber

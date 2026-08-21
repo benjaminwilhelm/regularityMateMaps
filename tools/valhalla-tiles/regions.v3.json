@@ -1,5 +1,246 @@
 {
   "_comment": "Which OSM extract each maps-v3 asset is built from, and which region ids resolve to it. An optional bbox (minLon,minLat,maxLon,maxLat) cuts the extract before building: Geofabrik ships the US south whole, but its tiles exceed GitHub's 2 GiB asset limit, so it is split on the client's own bounding boxes widened by roughly a degree.",
+  "_clusters_comment": "A cluster is ONE valhalla_build_tiles run over several merged extracts, sliced afterwards into release assets under 2 GiB. It exists because Valhalla tiles are not independent: a directed edge stores its end node as a GraphId carrying the neighbour tile's node *index*, and that index is handed out while that tile is built. Two countries built separately therefore number the shared border cell differently, and a corridor drawn from both routes onto whatever node now sits at that index -- wrong roads, no error. Everything inside one cluster comes from one build, so every border inside it joins up. Each cluster carries its own build id, which keeps its tiles in their own pool on the phone and makes mixing two clusters structurally impossible rather than merely discouraged. A region id may appear in several clusters (France is in eu_alps and eu_iberia); the client prefers whichever cluster covers more of the route.",
+  "clusters": [
+    {
+      "cluster": "eu_alps_core",
+      "_why": "The western Alps either side of the France-Italy frontier: Chamonix, the Mont Blanc, Aosta, Turin, Geneva and the Valais. Cut from Geofabrik's alpine extract with a bounding box because the whole extract is 2.3 GB and tiling it was OOM-killed in a Docker VM allotted 7.75 GB -- the machine has 16 GB, the VM does not. It claims ch_full, fr_full and it_full while holding a corner of each, which is safe: a cluster is chosen by the ground it holds, and a Trek in Zurich or Brittany falls through to that country's own asset.",
+      "geofabrik": [
+        "europe/alps"
+      ],
+      "ids": [
+        "ch_full",
+        "fr_full",
+        "it_full"
+      ],
+      "bbox": "5.5,44.0,9.6,47.1"
+    },
+    {
+      "cluster": "eu_alps",
+      "_why": "Every border the app's users actually cross in one build: Monte Carlo, the Alpine passes, the Mille Miglia, Bavaria and the Benelux runs all stay inside it.",
+      "geofabrik": [
+        "europe/dach",
+        "europe/france",
+        "europe/italy",
+        "europe/slovenia",
+        "europe/belgium",
+        "europe/netherlands",
+        "europe/luxembourg",
+        "europe/czech-republic"
+      ],
+      "ids": [
+        "de_full",
+        "at_full",
+        "ch_full",
+        "fr_full",
+        "it_full",
+        "si_full",
+        "be_full",
+        "nl_full",
+        "lu_full",
+        "cz_full"
+      ]
+    },
+    {
+      "cluster": "eu_central",
+      "_why": "The land borders between Germany, Poland, Czechia, Slovakia, Denmark, Lithuania and the northern Balkans. eu_alps covers the Alpine crossings and stops at them; this is everything east and north of that, and it is the largest build in the list.",
+      "geofabrik": [
+        "europe/dach",
+        "europe/poland",
+        "europe/czech-republic",
+        "europe/slovakia",
+        "europe/hungary",
+        "europe/denmark",
+        "europe/slovenia",
+        "europe/croatia",
+        "europe/lithuania"
+      ],
+      "ids": [
+        "de_full",
+        "at_full",
+        "ch_full",
+        "pl_full",
+        "cz_full",
+        "sk_full",
+        "hu_full",
+        "dk_full",
+        "si_full",
+        "hr_full",
+        "lt_full"
+      ]
+    },
+    {
+      "cluster": "eu_iberia",
+      "_why": "Spain and Portugal have no internal border worth the name, and the Pyrenees crossings need France on the same build to route at all.",
+      "geofabrik": [
+        "europe/spain",
+        "europe/portugal",
+        "europe/france"
+      ],
+      "ids": [
+        "es_full",
+        "pt_full",
+        "fr_full"
+      ]
+    },
+    {
+      "cluster": "eu_nordic",
+      "_why": "Sweden/Norway/Finland share long open land borders, and the Baltics connect to them by ferry and through Poland.",
+      "geofabrik": [
+        "europe/sweden",
+        "europe/norway",
+        "europe/finland",
+        "europe/denmark",
+        "europe/estonia",
+        "europe/latvia",
+        "europe/lithuania"
+      ],
+      "ids": [
+        "se_full",
+        "no_full",
+        "fi_full",
+        "dk_full",
+        "ee_full",
+        "lv_full",
+        "lt_full"
+      ]
+    },
+    {
+      "cluster": "eu_east",
+      "_why": "The ERC calendar runs across these borders constantly; Poland to Croatia is four countries and no single one of them is a Trek.",
+      "geofabrik": [
+        "europe/poland",
+        "europe/czech-republic",
+        "europe/slovakia",
+        "europe/hungary",
+        "europe/romania",
+        "europe/bulgaria",
+        "europe/croatia",
+        "europe/serbia",
+        "europe/slovenia",
+        "europe/greece",
+        "europe/turkey"
+      ],
+      "ids": [
+        "pl_full",
+        "sk_full",
+        "hu_full",
+        "ro_full",
+        "bg_full",
+        "hr_full",
+        "rs_full",
+        "gr_full",
+        "tr_full"
+      ]
+    },
+    {
+      "cluster": "eu_isles",
+      "_why": "Geofabrik ships Britain and Ireland as one extract, which is also the only land border in it.",
+      "geofabrik": [
+        "europe/britain-and-ireland"
+      ],
+      "ids": [
+        "uk_full",
+        "ie_full"
+      ]
+    },
+    {
+      "cluster": "na_west",
+      "_why": "The western states plus British Columbia and Alberta: the 49th parallel is a border a Trek can cross without noticing.",
+      "geofabrik": [
+        "north-america/us/california",
+        "north-america/us/oregon",
+        "north-america/us/washington",
+        "north-america/us/nevada",
+        "north-america/us/idaho",
+        "north-america/us/arizona",
+        "north-america/us/utah",
+        "north-america/us/montana",
+        "north-america/us/wyoming",
+        "north-america/us/colorado",
+        "north-america/us/new-mexico",
+        "north-america/canada/british-columbia",
+        "north-america/canada/alberta",
+        "north-america/us/kansas",
+        "north-america/us/nebraska",
+        "north-america/us/north-dakota",
+        "north-america/us/south-dakota",
+        "north-america/us/oklahoma",
+        "north-america/us/texas",
+        "north-america/mexico"
+      ],
+      "ids": [
+        "us_west",
+        "us_south_west",
+        "ca_bc",
+        "ca_alberta",
+        "us_midwest",
+        "mx_full"
+      ]
+    },
+    {
+      "cluster": "na_east",
+      "_why": "The northeast and Ontario/Quebec are one driving area; the Midwest reaches the same border from the other side.",
+      "geofabrik": [
+        "north-america/us/new-york",
+        "north-america/us/pennsylvania",
+        "north-america/us/vermont",
+        "north-america/us/new-hampshire",
+        "north-america/us/maine",
+        "north-america/us/massachusetts",
+        "north-america/us/connecticut",
+        "north-america/us/rhode-island",
+        "north-america/us/new-jersey",
+        "north-america/us/michigan",
+        "north-america/us/ohio",
+        "north-america/us/indiana",
+        "north-america/us/illinois",
+        "north-america/us/wisconsin",
+        "north-america/us/minnesota",
+        "north-america/canada/ontario",
+        "north-america/canada/quebec",
+        "north-america/us/kentucky",
+        "north-america/us/tennessee",
+        "north-america/us/west-virginia",
+        "north-america/us/virginia",
+        "north-america/us/north-carolina",
+        "north-america/us/missouri"
+      ],
+      "ids": [
+        "us_northeast",
+        "us_midwest",
+        "ca_ontario",
+        "ca_quebec",
+        "us_south_east"
+      ]
+    },
+    {
+      "cluster": "na_south",
+      "_why": "The southern states with Mexico, and the seam between our own south-east and south-west splits. A drive from Texas into Louisiana crosses a line we invented for GitHub's asset limit, and it has to be as navigable as any real border.",
+      "geofabrik": [
+        "north-america/us-south",
+        "north-america/mexico"
+      ],
+      "ids": [
+        "us_south_east",
+        "us_south_west",
+        "mx_full",
+        "us_midwest"
+      ]
+    },
+    {
+      "cluster": "sa_cone",
+      "_why": "Chile and Argentina are a single rally region separated by passes, not by a road network.",
+      "geofabrik": [
+        "south-america/chile",
+        "south-america/argentina"
+      ],
+      "ids": [
+        "cl_full",
+        "ar_full"
+      ]
+    }
+  ],
   "builds": [
     {
       "build": "ar_full",

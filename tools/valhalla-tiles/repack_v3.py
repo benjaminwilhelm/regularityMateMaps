@@ -44,11 +44,37 @@ The index carries a sha256 per tile. A ranged fetch that is interrupted and
 resumed badly yields a corrupt tile, and a corrupt Valhalla tile is *silent
 wrong routing* rather than a clean failure -- cheap insurance at ~64 bytes each.
 
+Slicing a cluster
+-----------------
+
+One country per asset is not a design, it is a limit: Valhalla tiles are not
+independent. A directed edge stores its end node as a GraphId carrying the
+neighbour tile's node *index*, and that index is handed out while that tile is
+built (``baldr/directededge.h``: ``endnode_ : 46``, ``opp_index_ : 7``). France
+built alone and Italy built alone therefore number the cell they share
+differently, and a corridor drawn from both routes onto whatever node now sits
+at that index -- wrong roads, and no error anywhere.
+
+So a *cluster* is one ``valhalla_build_tiles`` run over several merged extracts,
+and this script slices the single tree it produces into release assets under
+GitHub's 2 GiB ceiling::
+
+    python3 repack_v3.py --tiles ./out/tiles --cluster eu_alps --out ./packed
+
+Slicing is packaging and nothing more -- every asset descends from one build, so
+every border inside the cluster joins up. Assets are filled in key order, which
+makes each one a contiguous span of tile ids, so the manifest can say which
+asset holds a cell in a few bytes per asset instead of a map of every key. The
+levels are ordered 0, 1, 2 deliberately: levels 0 and 1 are the whole cluster's
+long-distance graph and only a few hundred tiles, so they land together in the
+first asset and every corridor fetches that one index plus one or two others.
+
 Usage
 -----
 
     python3 repack_v3.py --zip ch_full.vtiles.zip --region ch_full --out ./out
     python3 repack_v3.py --all --out ./out          # every region in regions.json
+    python3 repack_v3.py --tiles ./tiles --cluster eu_alps --out ./packed
 """
 
 from __future__ import annotations
@@ -107,6 +133,271 @@ def member_name(key: str) -> str:
     return f"{level}/" + "/".join(groups) + ".gph.gz"
 
 
+# GitHub rejects a release asset at 2 GiB, and reports it as an opaque HTTP 422
+# after the upload rather than before it. Slicing stops short of the ceiling so
+# a tar's own padding cannot carry an asset over it.
+MAX_ASSET_BYTES = 1_900_000_000
+
+
+def level_of(key: str) -> int:
+    return int(key.split("/")[0])
+
+
+def id_of(key: str) -> int:
+    return int(key.split("/")[1])
+
+
+def sort_key(key: str) -> tuple[int, int]:
+    """Level first, then id.
+
+    Levels 0 and 1 are the cluster's long-distance graph and only a few hundred
+    tiles; putting them first lands them together in the opening asset, so every
+    corridor reads that index plus one or two others rather than all of them.
+    Within a level, ids ascend, and a level-2 id is ``row * 1440 + col`` -- so
+    ascending order walks the world in latitude bands and a corridor's tiles
+    stay close together in the sequence.
+    """
+    return (level_of(key), id_of(key))
+
+
+def gzip_blob(raw: bytes, gzip_level: int) -> bytes:
+    # mtime=0 keeps the gzip header deterministic; without it the same input
+    # produces a different archive on every run.
+    buf = io.BytesIO()
+    with gzip.GzipFile(fileobj=buf, mode="wb", compresslevel=gzip_level, mtime=0) as gz:
+        gz.write(raw)
+    return buf.getvalue()
+
+
+def add_tile(tf: tarfile.TarFile, key: str, blob: bytes, raw: bytes) -> dict:
+    """Writes one tile into an open tar and returns its index entry."""
+    ti = tarfile.TarInfo(member_name(key))
+    ti.size = len(blob)
+    ti.mtime = 0
+    ti.uid = ti.gid = 0
+    ti.uname = ti.gname = ""
+    tf.addfile(ti, io.BytesIO(blob))
+
+    # tar writes a 512-byte header immediately before the payload, so the
+    # payload begins at the stream position after addfile minus its own padded
+    # length. Recording the *payload* offset is what lets a client range-GET the
+    # bytes alone and skip tar parsing entirely.
+    end = tf.fileobj.tell()
+    padded = (len(blob) + 511) // 512 * 512
+    return {
+        "o": end - padded,
+        "c": len(blob),
+        "u": len(raw),
+        "h": "sha256:" + hashlib.sha256(raw).hexdigest(),
+    }
+
+
+LEVEL_DEGREES = {0: 4.0, 1: 1.0, 2: 0.25}
+
+# A Valhalla tile with no edges in it is a few hundred bytes of header. The
+# alpine build has 126 of them, scattered across the Mediterranean, because
+# `osmium extract --strategy complete_ways` keeps whole ways that touch the box
+# and some of those ways -- ferry routes, administrative boundaries -- run for
+# hundreds of kilometres. They are harmless to publish and cost nothing, but
+# they must not define where the cluster claims to be: unfiltered they put the
+# western Alps' footprint at Gibraltar. The distribution is sharply bimodal
+# (median 392 kB against a 312-byte floor), so any threshold in between
+# separates them.
+MIN_MEANINGFUL_TILE_BYTES = 4096
+
+
+def cell_of(key: str) -> tuple[float, float, float, float]:
+    """The south-west corner and size of a tile's own cell, in degrees."""
+    level, tile_id = level_of(key), id_of(key)
+    degrees = LEVEL_DEGREES[level]
+    cols = int(360.0 / degrees)
+    row, col = divmod(tile_id, cols)
+    lat = row * degrees - 90.0
+    lon = col * degrees - 180.0
+    return lat, lon, lat + degrees, lon + degrees
+
+
+def bounds_of(keys: list[str], sizes: dict[str, int]) -> dict:
+    """The ground a cluster covers, as a WGS84 box.
+
+    Published because an asset's id range is a *span*, and ids run row-major: a
+    span from the westernmost alpine tile to the easternmost passes through
+    every id in the rows between, which is ground a thousand kilometres away.
+    Without this the client would treat an alpine cluster as a candidate for a
+    drive in Brittany -- the index would still refuse the tiles, so nothing
+    would route wrongly, but it would fetch the wrong index to find out and tell
+    the driver the wrong thing about their map.
+    """
+    # Level 2 only. A level-0 cell is 4 degrees across and a level-1 cell one
+    # degree, so those always overhang the ground actually built: unioning every
+    # level put the western Alps in a box reaching Portugal, which is precisely
+    # the over-claiming this field exists to prevent. The fine hierarchy is the
+    # extract's real footprint. Coarse tiles are still served, because a key is
+    # tested by whether its own cell *overlaps* the box, and a 4-degree cell
+    # covering the Alps does.
+    local = [
+        key for key in keys
+        if level_of(key) == 2 and sizes.get(key, 0) >= MIN_MEANINGFUL_TILE_BYTES
+    ] or [key for key in keys if level_of(key) == 2] or list(keys)
+    cells = [cell_of(key) for key in local]
+    return {
+        "minLat": min(c[0] for c in cells),
+        "minLon": min(c[1] for c in cells),
+        "maxLat": max(c[2] for c in cells),
+        "maxLon": max(c[3] for c in cells),
+    }
+
+
+def ranges_of(keys: list[str]) -> list[dict]:
+    """Per-level ``lo``/``hi`` tile ids for an asset, inclusive.
+
+    This is what lets the manifest answer "which asset holds this cell" without
+    shipping a map of every key: assets are filled in sorted order, so each one
+    holds a contiguous run of ids at each level it touches.
+    """
+    out = []
+    for level in sorted({level_of(k) for k in keys}):
+        ids = [id_of(k) for k in keys if level_of(k) == level]
+        out.append({"l": level, "lo": min(ids), "hi": max(ids)})
+    return out
+
+
+def tiles_from_dir(root: Path) -> list[tuple[str, Path]]:
+    """Every ``.gph`` under a built tile tree, keyed as the index keys them."""
+    found = []
+    for path in root.rglob("*.gph"):
+        key = tile_key(str(path))
+        if key:
+            found.append((key, path))
+    return found
+
+
+def slice_cluster(
+    tiles_root: Path,
+    cluster: str,
+    out_dir: Path,
+    build: str,
+    max_bytes: int = MAX_ASSET_BYTES,
+    gzip_level: int = 6,
+) -> dict:
+    """Cuts one built tile tree into release assets, and describes them.
+
+    Returns the cluster fragment merged into ``regions-v3.json``. The tiles are
+    not touched: this is the same packing the per-region path does, stopped and
+    restarted whenever an asset approaches the release ceiling.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    found = tiles_from_dir(tiles_root)
+    if not found:
+        raise SystemExit(f"no .gph tiles under {tiles_root}")
+    found.sort(key=lambda kv: sort_key(kv[0]))
+
+    assets: list[dict] = []
+    index: dict[str, dict] = {}
+    keys_in_asset: list[str] = []
+    tf: tarfile.TarFile | None = None
+    vtar_path: Path | None = None
+
+    def finish() -> None:
+        nonlocal tf, index, keys_in_asset, vtar_path
+        if tf is None or vtar_path is None:
+            return
+        tf.close()
+        name = vtar_path.stem
+        doc = {
+            "build": build,
+            "cluster": cluster,
+            "region": name,
+            "tileCount": len(index),
+            "vtarBytes": vtar_path.stat().st_size,
+            "rawBytes": sum(v["u"] for v in index.values()),
+            "tiles": index,
+        }
+        (out_dir / f"{name}.idx.json").write_text(
+            json.dumps(doc, separators=(",", ":"), sort_keys=True)
+        )
+        assets.append({
+            "vtar": f"{name}.vtar",
+            "idx": f"{name}.idx.json",
+            "tileCount": doc["tileCount"],
+            "vtarBytes": doc["vtarBytes"],
+            "ranges": ranges_of(keys_in_asset),
+        })
+        print(f"  {name}: {doc['tileCount']} tiles, {doc['vtarBytes']/1e6:.0f} MB")
+        tf, index, keys_in_asset, vtar_path = None, {}, [], None
+
+    for key, path in found:
+        raw = path.read_bytes()
+        blob = gzip_blob(raw, gzip_level)
+        # Rolling over *before* the write is what keeps the promise: an asset
+        # never exceeds the ceiling, rather than exceeding it by one tile and
+        # failing the upload hours later. A tile larger than the cap on its own
+        # still gets an asset of its own rather than no asset at all.
+        if tf is not None and vtar_path is not None:
+            if tf.fileobj.tell() + len(blob) + 1024 > max_bytes:
+                finish()
+        if tf is None:
+            vtar_path = out_dir / f"{cluster}.{len(assets):02d}.vtar"
+            tf = tarfile.open(vtar_path, "w", format=tarfile.GNU_FORMAT)
+        index[key] = add_tile(tf, key, blob, raw)
+        keys_in_asset.append(key)
+
+    finish()
+
+    fragment = {
+        "id": cluster,
+        "build": build,
+        "bounds": bounds_of(
+            [key for key, _ in found],
+            {key: entry["u"] for asset in assets for key, entry in
+             json.loads((out_dir / asset["idx"]).read_text())["tiles"].items()},
+        ),
+        "assets": assets,
+    }
+    (out_dir / f"{cluster}.cluster.json").write_text(json.dumps(fragment, indent=2, sort_keys=True))
+    verify_slices(out_dir, fragment, {k for k, _ in found})
+    return fragment
+
+
+def verify_slices(out_dir: Path, fragment: dict, expected: set[str]) -> None:
+    """Proves the slice lost nothing, duplicated nothing and stayed in its ranges.
+
+    A tile that lands in no asset is a hole in the middle of a cluster that looks
+    exactly like ordinary coverage: the client asks the manifest which asset
+    holds the cell, is told none, and reports the route as uncovered there. That
+    is indistinguishable from the edge of the world, so it has to be impossible
+    rather than unlikely.
+    """
+    seen: dict[str, str] = {}
+    for asset in fragment["assets"]:
+        doc = json.loads((out_dir / asset["idx"]).read_text())
+        spans = {r["l"]: (r["lo"], r["hi"]) for r in asset["ranges"]}
+        for key in doc["tiles"]:
+            if key in seen:
+                raise SystemExit(f"{key} is in both {seen[key]} and {asset['vtar']}")
+            seen[key] = asset["vtar"]
+            lo, hi = spans[level_of(key)]
+            if not lo <= id_of(key) <= hi:
+                raise SystemExit(f"{key} sits outside {asset['vtar']}'s declared range")
+
+    missing = expected - set(seen)
+    if missing:
+        raise SystemExit(f"{len(missing)} tile(s) landed in no asset, e.g. {sorted(missing)[:3]}")
+
+    # Ranges must not overlap between assets at a level, or "which asset holds
+    # this cell" has two answers and the client picks by accident.
+    for level in {r["l"] for a in fragment["assets"] for r in a["ranges"]}:
+        spans = sorted(
+            ((r["lo"], r["hi"], a["vtar"]) for a in fragment["assets"] for r in a["ranges"] if r["l"] == level)
+        )
+        for (lo1, hi1, a1), (lo2, hi2, a2) in zip(spans, spans[1:]):
+            if lo2 <= hi1:
+                raise SystemExit(f"level {level}: {a1} and {a2} both claim id {lo2}")
+
+    total = sum(a["vtarBytes"] for a in fragment["assets"])
+    print(f"  verified {len(seen)} tiles across {len(fragment['assets'])} asset(s), {total/1e6:.0f} MB total")
+
+
 def repack(zip_path: Path, region: str, out_dir: Path, gzip_level: int = 6) -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
     vtar_path = out_dir / f"{region}.vtar"
@@ -124,34 +415,7 @@ def repack(zip_path: Path, region: str, out_dir: Path, gzip_level: int = 6) -> d
 
         for key, info in tiles:
             raw = zf.read(info)
-            # mtime=0 keeps the gzip header deterministic; without it the same
-            # input produces a different archive on every run.
-            buf = io.BytesIO()
-            with gzip.GzipFile(fileobj=buf, mode="wb", compresslevel=gzip_level, mtime=0) as gz:
-                gz.write(raw)
-            blob = buf.getvalue()
-
-            ti = tarfile.TarInfo(member_name(key))
-            ti.size = len(blob)
-            ti.mtime = 0
-            ti.uid = ti.gid = 0
-            ti.uname = ti.gname = ""
-            tf.addfile(ti, io.BytesIO(blob))
-
-            # tar writes a 512-byte header immediately before the payload, so the
-            # payload begins at the stream position after addfile minus its own
-            # padded length. Recording the *payload* offset is what lets a client
-            # range-GET the bytes alone and skip tar parsing entirely.
-            end = tf.fileobj.tell()
-            padded = (len(blob) + 511) // 512 * 512
-            offset = end - padded
-
-            index[key] = {
-                "o": offset,
-                "c": len(blob),
-                "u": len(raw),
-                "h": "sha256:" + hashlib.sha256(raw).hexdigest(),
-            }
+            index[key] = add_tile(tf, key, gzip_blob(raw, gzip_level), raw)
 
     doc = {
         "build": BUILD_ID,
@@ -209,11 +473,31 @@ def main() -> int:
     ap.add_argument("--zip", type=Path, help="a local maps-v2 zip")
     ap.add_argument("--region", help="region id, e.g. ch_full")
     ap.add_argument("--all", action="store_true", help="every region in regions.json")
+    ap.add_argument("--tiles", type=Path, help="a built tile tree to slice into cluster assets")
+    ap.add_argument("--cluster", help="cluster id the --tiles tree belongs to, e.g. eu_alps")
+    ap.add_argument("--build", help="build id to stamp; defaults to <cluster>-<BUILD_ID date>")
+    ap.add_argument("--max-asset-bytes", type=int, default=MAX_ASSET_BYTES)
     ap.add_argument("--regions-json", type=Path, default=Path(__file__).resolve().parents[2] / "regions.json")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--cache", type=Path, default=Path("./_v2cache"))
     ap.add_argument("--gzip-level", type=int, default=6)
     args = ap.parse_args()
+
+    if args.tiles or args.cluster:
+        if not (args.tiles and args.cluster):
+            ap.error("--tiles and --cluster go together")
+        # Each cluster carries its own build id. That is what keeps its tiles in
+        # their own pool on the phone, so two clusters that publish the same
+        # border cell from different builds can never end up in one directory --
+        # structurally impossible rather than merely discouraged.
+        build = args.build or f"{args.cluster}-{BUILD_ID.split('-', 1)[1]}"
+        print(f"[{args.cluster}] slicing {args.tiles} as build {build}")
+        fragment = slice_cluster(
+            args.tiles, args.cluster, args.out, build,
+            max_bytes=args.max_asset_bytes, gzip_level=args.gzip_level,
+        )
+        print(f"\nwrote {len(fragment['assets'])} asset(s) + {args.cluster}.cluster.json to {args.out}")
+        return 0
 
     targets: list[tuple[str, Path | None]] = []
     if args.all:

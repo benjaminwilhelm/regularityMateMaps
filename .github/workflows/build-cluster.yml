@@ -1,0 +1,167 @@
+name: Build a cluster (car-only, sliced)
+
+# Builds one cluster -- several countries in a single valhalla_build_tiles run
+# over one merged extract -- and slices the result into release assets.
+#
+# Why a cluster rather than a country
+# -----------------------------------
+#
+# Valhalla tiles are not independent. A directed edge stores its end node as a
+# GraphId carrying the neighbour tile's node *index*, and that index is handed
+# out while that tile is built (baldr/directededge.h: `endnode_ : 46`,
+# `opp_index_ : 7`). France built alone and Italy built alone therefore number
+# the border cell they share differently, and a corridor drawn from both routes
+# onto whatever node now sits at that index: wrong roads, nothing logged, no way
+# for the app to tell. Countries that a Trek might drive between have to be
+# built together or the crossing cannot work offline at all.
+#
+# Slicing afterwards is pure packaging -- every asset descends from the one
+# build -- and it is what keeps each asset under GitHub's 2 GiB ceiling.
+#
+# What fits here, and what does not
+# ---------------------------------
+#
+# A free runner gives 4 cores, 16 GB and a 6-hour ceiling, with ~55 GB of disk
+# after the cleanup step. That fits the small clusters: eu_isles (~1.8 GB of
+# extract) and sa_cone. eu_alps merges roughly 11 GB and takes far longer than
+# six hours, so it is built on a workstation with tools/valhalla-tiles/
+# build_cluster.sh, which is resumable and produces byte-identical output.
+# Trying a large cluster here wastes six hours and publishes nothing.
+
+on:
+  workflow_dispatch:
+    inputs:
+      cluster:
+        description: 'Cluster id from regions.v3.json (eu_isles, sa_cone, …)'
+        required: true
+        default: 'eu_isles'
+      publish:
+        description: 'Upload to the maps-v3 release (otherwise artifacts only)'
+        type: boolean
+        required: true
+        default: false
+
+# One at a time: every run rewrites the shared manifest, and two runs racing
+# that rewrite would delist whichever finished first.
+concurrency:
+  group: build-v3
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          df -h /
+
+      - name: Read the cluster's extracts
+        id: spec
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          spec = json.load(open('tools/valhalla-tiles/regions.v3.json'))
+          name = "${{ inputs.cluster }}"
+          for c in spec['clusters']:
+              if c['cluster'] == name:
+                  print("extracts=" + " ".join(c['geofabrik']))
+                  break
+          else:
+              raise SystemExit(f"unknown cluster {name!r}; known: "
+                               + ", ".join(c['cluster'] for c in spec['clusters']))
+          PY
+
+      - name: Download and merge the extracts
+        run: |
+          set -euo pipefail
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends osmium-tool
+          mkdir -p extracts
+          for e in ${{ steps.spec.outputs.extracts }}; do
+            out="extracts/$(echo "$e" | tr '/' '_').osm.pbf"
+            curl -fL -o "$out" "https://download.geofabrik.de/${e}-latest.osm.pbf"
+          done
+          COUNT=$(ls extracts/*.osm.pbf | wc -l)
+          if [ "$COUNT" -eq 1 ]; then
+            mv extracts/*.osm.pbf cluster.osm.pbf
+          else
+            # osmium merge drops objects present in more than one input, which
+            # is what neighbouring Geofabrik extracts do along a shared border.
+            # Concatenating would hand Valhalla the same way twice.
+            osmium merge extracts/*.osm.pbf -o cluster.osm.pbf --overwrite
+          fi
+          ls -lh cluster.osm.pbf
+          df -h /
+
+      - name: Build car-only tiles
+        run: |
+          set -euo pipefail
+          docker pull ghcr.io/valhalla/valhalla:latest
+          mkdir -p out
+          docker run --rm -v "$PWD:/w" -w /w ghcr.io/valhalla/valhalla:latest sh -c \
+            "valhalla_build_config \
+               --mjolnir-tile-dir /w/out/tiles \
+               --mjolnir-include-pedestrian false \
+               --mjolnir-include-bicycle false \
+               > /w/out/valhalla.json && \
+             valhalla_build_tiles -c /w/out/valhalla.json /w/cluster.osm.pbf"
+          du -sh out/tiles
+
+      - name: Slice into release assets
+        # The slicer proves every tile landed in exactly one asset and that no
+        # two assets claim the same tile id. A cell that lands in no asset is a
+        # hole the client cannot distinguish from the edge of coverage.
+        run: |
+          set -euo pipefail
+          mkdir -p packed
+          python3 tools/valhalla-tiles/repack_v3.py \
+            --tiles out/tiles --cluster "${{ inputs.cluster }}" --out packed
+          ls -la packed
+
+      - name: Refuse an asset GitHub will not accept
+        run: |
+          set -euo pipefail
+          LIMIT=$((2 * 1024 * 1024 * 1024))
+          for f in packed/*.vtar; do
+            BYTES=$(stat -c%s "$f")
+            echo "$(basename "$f") is $((BYTES / 1000000)) MB"
+            if [ "$BYTES" -ge "$LIMIT" ]; then
+              echo "::error::$f is over GitHub's 2 GiB asset limit; lower --max-asset-bytes."
+              exit 1
+            fi
+          done
+
+      - name: Rebuild the manifest from the release
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view maps-v3 >/dev/null 2>&1 || \
+            gh release create maps-v3 --title "Valhalla tiles v3 (corridor format, car-only)" \
+              --notes "Per-tile addressable regions and clusters, built without pedestrian or bicycle data."
+          gh release upload maps-v3 packed/${{ inputs.cluster }}.*.vtar packed/${{ inputs.cluster }}.*.idx.json --clobber
+          # The ODbL notice travels with the data, not just with the repository:
+          # someone who downloads a vtar has the database and needs the terms.
+          gh release upload maps-v3 ATTRIBUTION.txt --clobber
+          # After the upload, so the manifest describes what is really there.
+          python3 tools/valhalla-tiles/merge_manifest.py --out regions-v3.json --extra packed
+          gh release upload maps-v3 regions-v3.json --clobber
+
+      - name: Upload artifacts
+        if: ${{ !inputs.publish }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluster-${{ inputs.cluster }}
+          path: packed/
+          retention-days: 7
