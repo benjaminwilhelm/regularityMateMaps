@@ -125,6 +125,14 @@ if [ "$SLICE_ONLY" != "--slice-only" ]; then
 
   # --- 2. merge -------------------------------------------------------------
 
+  # The merge is keyed by the extracts that went into it, so redefining a
+  # cluster invalidates it rather than being silently reused.
+  MERGE_MARK="$WORK/.merged-$(printf '%s\n' "${EXTRACTS[@]}" | sort | shasum | cut -c1-12)"
+  if [ -s "$MERGED" ] && [ ! -f "$MERGE_MARK" ]; then
+    echo "cluster definition changed since $(basename "$MERGED") was built; remerging"
+    rm -f "$MERGED" "$WORK"/.cut-* "$MERGE_MARK"
+  fi
+
   if [ -s "$MERGED" ]; then
     echo "have $(basename "$MERGED")"
   elif [ "${#EXTRACTS[@]}" -eq 1 ]; then
@@ -134,10 +142,20 @@ if [ "$SLICE_ONLY" != "--slice-only" ]; then
   else
     command -v osmium >/dev/null || { echo "osmium not found: brew install osmium-tool" >&2; exit 1; }
     echo "merging ${#EXTRACTS[@]} extracts"
+    # Only the extracts this cluster declares -- never a glob over the download
+    # directory. Downloads are cached and kept, so a glob silently merges
+    # whatever an earlier version of the cluster used to include: dropping
+    # France from eu_iberia left a 3.9 GB France sitting in extracts/, and the
+    # "1.9 GB" rebuild produced a 6.5 GB extract that died exactly as the one
+    # before it had. Nothing in the output says which extracts went in.
+    MERGE_INPUTS=()
+    for e in "${EXTRACTS[@]}"; do
+      MERGE_INPUTS+=("$WORK/extracts/$(echo "$e" | tr '/' '_').osm.pbf")
+    done
     # osmium merge drops objects that appear in more than one input, which is
     # exactly what neighbouring Geofabrik extracts do along their shared border.
     # Concatenating instead would feed Valhalla the same way twice.
-    osmium merge "$WORK"/extracts/*.osm.pbf -o "$MERGED" --overwrite
+    osmium merge "${MERGE_INPUTS[@]}" -o "$MERGED" --overwrite
   fi
   # Cut to the cluster's box, when it declares one. Not a nicety: tiling is
   # bounded by memory rather than disk, and a continental extract dies inside a
@@ -157,6 +175,7 @@ if [ "$SLICE_ONLY" != "--slice-only" ]; then
       touch "$CUT_MARK"
     fi
   fi
+  touch "$MERGE_MARK"
   ls -lh "$MERGED"
 
   # --- 3. tiles -------------------------------------------------------------

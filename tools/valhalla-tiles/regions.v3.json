@@ -71,15 +71,26 @@
     },
     {
       "cluster": "eu_iberia",
-      "_why": "Spain and Portugal have no internal border worth the name, and the Pyrenees crossings need France on the same build to route at all.",
+      "_why": "Spain and Portugal, whose border is long, open and crossed constantly. France used to be in here for the Pyrenees and made the merge 7.0 GB, which was OOM-killed in Valhalla's final binning pass; the Pyrenean crossings are served by eu_pyrenees instead.",
       "geofabrik": [
         "europe/spain",
-        "europe/portugal",
-        "europe/france"
+        "europe/portugal"
       ],
       "ids": [
         "es_full",
-        "pt_full",
+        "pt_full"
+      ]
+    },
+    {
+      "cluster": "eu_pyrenees",
+      "_why": "The Spain-France frontier, cut to the mountains either side of it. A cluster only has to hold the ground a driver crosses, and holding two whole countries to join them was what made the build impossible. It claims es_full and fr_full while holding a strip of each, which is safe: a cluster is chosen by the ground it covers, so a Trek in Andalusia or Normandy falls through to that country's own asset.",
+      "geofabrik": [
+        "europe/spain",
+        "europe/france"
+      ],
+      "bbox": "-2.2,41.6,3.6,44.2",
+      "ids": [
+        "es_full",
         "fr_full"
       ]
     },
