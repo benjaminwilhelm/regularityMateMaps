@@ -59,6 +59,8 @@ SEA_BORDERS = {
     ("fr_full", "ie_full"): "Celtic Sea",
     ("fr_full", "uk_full"): "Channel; the tunnel is a car-carrying train",
     ("cz_full", "hu_full"): "not adjacent at all — the boxes overlap over Slovakia",
+    ("hr_full", "it_full"): "the Adriatic; the road between them runs through Slovenia",
+    ("it_full", "rs_full"): "not adjacent at all — Italy's box clears Serbia's by 0.3 degrees of open sea",
 }
 
 
@@ -71,13 +73,26 @@ def region_bounds() -> dict[str, list[tuple[float, float, float, float]]]:
         )
     text = MAP_REGION_KT.read_text()
     block = text.split("val BOUNDS: Map<String, List<MapRegionBounds>>")[1]
+
+    # Split on the region headers and read each region's whole body, rather than
+    # matching up to the first `),`. A concave country is declared over several
+    # lines -- Austria and Italy both are -- and a non-greedy match ends at the
+    # first box's closing paren, leaving a fragment with no complete
+    # MapRegionBounds in it. Those regions then vanish from the audit entirely:
+    # it reported 51 regions where the client has 53, and every border touching
+    # Austria or Italy went unchecked. An audit that silently drops the two
+    # hardest-shaped countries is worse than no audit, because it reports
+    # success.
     out: dict[str, list[tuple[float, float, float, float]]] = {}
-    for match in re.finditer(r'"(\w+)" to listOf\((.*?)\),\n', block, re.S):
+    headers = list(re.finditer(r'"(\w+)" to listOf\(', block))
+    for index, match in enumerate(headers):
+        end = headers[index + 1].start() if index + 1 < len(headers) else len(block)
+        body = block[match.end():end]
         boxes = [
             tuple(float(v) for v in box)
             for box in re.findall(
                 r"MapRegionBounds\(([-\d.]+),\s*([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\)",
-                match.group(2),
+                body,
             )
         ]
         if boxes:
