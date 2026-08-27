@@ -61,6 +61,14 @@ SEA_BORDERS = {
     ("cz_full", "hu_full"): "not adjacent at all — the boxes overlap over Slovakia",
     ("hr_full", "it_full"): "the Adriatic; the road between them runs through Slovenia",
     ("it_full", "rs_full"): "not adjacent at all — Italy's box clears Serbia's by 0.3 degrees of open sea",
+    ("ba_full", "it_full"): "the Adriatic",
+    ("it_full", "me_full"): "the Adriatic",
+    ("al_full", "ba_full"): "not adjacent — Montenegro and Kosovo lie between them",
+    ("al_full", "hr_full"): "not adjacent — Montenegro lies between them",
+    ("ba_full", "si_full"): "not adjacent — Croatia lies between them",
+    ("gr_full", "me_full"): "not adjacent — Albania lies between them",
+    ("me_full", "ro_full"): "not adjacent — Serbia lies between them",
+    ("br_full", "cl_full"): "not adjacent — the Andes and Bolivia lie between them; Brazil's box is simply enormous",
 }
 
 

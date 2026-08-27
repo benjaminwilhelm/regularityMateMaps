@@ -145,6 +145,32 @@
       ]
     },
     {
+      "cluster": "eu_balkans",
+      "_why": "The western Balkans, where six countries meet inside three hundred kilometres and every ERC route crosses several of them. Small extracts, so the whole thing is about 1.3 GB -- the cheapest cluster on the list and the one that closes the most borders.",
+      "geofabrik": [
+        "europe/croatia",
+        "europe/slovenia",
+        "europe/bosnia-herzegovina",
+        "europe/montenegro",
+        "europe/serbia",
+        "europe/albania",
+        "europe/macedonia",
+        "europe/greece",
+        "europe/bulgaria"
+      ],
+      "ids": [
+        "hr_full",
+        "si_full",
+        "ba_full",
+        "me_full",
+        "rs_full",
+        "al_full",
+        "mk_full",
+        "gr_full",
+        "bg_full"
+      ]
+    },
+    {
       "cluster": "eu_isles",
       "_why": "Geofabrik ships Britain and Ireland as one extract, which is also the only land border in it.",
       "geofabrik": [
@@ -250,9 +276,52 @@
         "cl_full",
         "ar_full"
       ]
+    },
+    {
+      "cluster": "sa_continent",
+      "_why": "South America as one build. sa_cone already joins Chile and Argentina and stays as it is -- it is published and half the size -- but Brazil, Bolivia, Peru, Uruguay and Colombia bring eleven more borders that only a continental build can carry.",
+      "geofabrik": [
+        "south-america/chile",
+        "south-america/argentina",
+        "south-america/brazil",
+        "south-america/uruguay",
+        "south-america/peru",
+        "south-america/bolivia",
+        "south-america/colombia"
+      ],
+      "ids": [
+        "cl_full",
+        "ar_full",
+        "br_full",
+        "uy_full",
+        "pe_full",
+        "bo_full",
+        "co_full"
+      ]
+    },
+    {
+      "cluster": "af_south",
+      "_why": "Southern Africa: South Africa had no published neighbour at all until Namibia and Botswana were added, so a rally raid crossing either border left the map behind entirely.",
+      "geofabrik": [
+        "africa/south-africa",
+        "africa/namibia",
+        "africa/botswana"
+      ],
+      "ids": [
+        "za_full",
+        "na_full",
+        "bw_full"
+      ]
     }
   ],
   "builds": [
+    {
+      "build": "al_full",
+      "geofabrik": "europe/albania",
+      "ids": [
+        "al_full"
+      ]
+    },
     {
       "build": "ar_full",
       "geofabrik": "south-america/argentina",
@@ -275,6 +344,13 @@
       ]
     },
     {
+      "build": "ba_full",
+      "geofabrik": "europe/bosnia-herzegovina",
+      "ids": [
+        "ba_full"
+      ]
+    },
+    {
       "build": "be_full",
       "geofabrik": "europe/belgium",
       "ids": [
@@ -286,6 +362,27 @@
       "geofabrik": "europe/bulgaria",
       "ids": [
         "bg_full"
+      ]
+    },
+    {
+      "build": "bo_full",
+      "geofabrik": "south-america/bolivia",
+      "ids": [
+        "bo_full"
+      ]
+    },
+    {
+      "build": "br_full",
+      "geofabrik": "south-america/brazil",
+      "ids": [
+        "br_full"
+      ]
+    },
+    {
+      "build": "bw_full",
+      "geofabrik": "africa/botswana",
+      "ids": [
+        "bw_full"
       ]
     },
     {
@@ -429,6 +526,13 @@
       ]
     },
     {
+      "build": "is_full",
+      "geofabrik": "europe/iceland",
+      "ids": [
+        "is_full"
+      ]
+    },
+    {
       "build": "it_full",
       "geofabrik": "europe/italy",
       "ids": [
@@ -478,6 +582,13 @@
       ]
     },
     {
+      "build": "me_full",
+      "geofabrik": "europe/montenegro",
+      "ids": [
+        "me_full"
+      ]
+    },
+    {
       "build": "mg_full",
       "geofabrik": "africa/madagascar",
       "ids": [
@@ -485,10 +596,24 @@
       ]
     },
     {
+      "build": "mk_full",
+      "geofabrik": "europe/macedonia",
+      "ids": [
+        "mk_full"
+      ]
+    },
+    {
       "build": "mx_full",
       "geofabrik": "north-america/mexico",
       "ids": [
         "mx_full"
+      ]
+    },
+    {
+      "build": "na_full",
+      "geofabrik": "africa/namibia",
+      "ids": [
+        "na_full"
       ]
     },
     {
@@ -510,6 +635,13 @@
       "geofabrik": "australia-oceania/new-zealand",
       "ids": [
         "nz_full"
+      ]
+    },
+    {
+      "build": "pe_full",
+      "geofabrik": "south-america/peru",
+      "ids": [
+        "pe_full"
       ]
     },
     {
@@ -538,6 +670,13 @@
       "geofabrik": "europe/serbia",
       "ids": [
         "rs_full"
+      ]
+    },
+    {
+      "build": "sa_full",
+      "geofabrik": "asia/gcc-states",
+      "ids": [
+        "sa_full"
       ]
     },
     {
@@ -617,6 +756,13 @@
       "geofabrik": "north-america/us-west",
       "ids": [
         "us_west"
+      ]
+    },
+    {
+      "build": "uy_full",
+      "geofabrik": "south-america/uruguay",
+      "ids": [
+        "uy_full"
       ]
     },
     {
