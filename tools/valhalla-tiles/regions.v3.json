@@ -3,21 +3,8 @@
   "_clusters_comment": "A cluster is ONE valhalla_build_tiles run over several merged extracts, sliced afterwards into release assets under 2 GiB. It exists because Valhalla tiles are not independent: a directed edge stores its end node as a GraphId carrying the neighbour tile's node *index*, and that index is handed out while that tile is built. Two countries built separately therefore number the shared border cell differently, and a corridor drawn from both routes onto whatever node now sits at that index -- wrong roads, no error. Everything inside one cluster comes from one build, so every border inside it joins up. Each cluster carries its own build id, which keeps its tiles in their own pool on the phone and makes mixing two clusters structurally impossible rather than merely discouraged. A region id may appear in several clusters (France is in eu_alps and eu_iberia); the client prefers whichever cluster covers more of the route.",
   "clusters": [
     {
-      "cluster": "eu_alps_core",
-      "_why": "The western Alps either side of the France-Italy frontier: Chamonix, the Mont Blanc, Aosta, Turin, Geneva and the Valais. Cut from Geofabrik's alpine extract with a bounding box because the whole extract is 2.3 GB and tiling it was OOM-killed in a Docker VM allotted 7.75 GB -- the machine has 16 GB, the VM does not. It claims ch_full, fr_full and it_full while holding a corner of each, which is safe: a cluster is chosen by the ground it holds, and a Trek in Zurich or Brittany falls through to that country's own asset.",
-      "geofabrik": [
-        "europe/alps"
-      ],
-      "ids": [
-        "ch_full",
-        "fr_full",
-        "it_full"
-      ],
-      "bbox": "5.5,44.0,9.6,47.1"
-    },
-    {
       "cluster": "eu_alps",
-      "_why": "Every border the app's users actually cross in one build: Monte Carlo, the Alpine passes, the Mille Miglia, Bavaria and the Benelux runs all stay inside it.",
+      "_why": "Every border the app's users actually cross in one build: Monte Carlo, the Alpine passes, the Mille Miglia, Bavaria and the Benelux runs all stay inside it. Supersedes the former eu_alps_core, a bbox'd corner built only because the full merge was OOM-killed in a 7.75 GB Docker VM on the mac; a 62 GB Windows box builds the whole thing, so the stopgap was removed.",
       "geofabrik": [
         "europe/dach",
         "europe/france",
